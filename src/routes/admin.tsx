@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
@@ -50,7 +50,7 @@ function AdminPage() {
 
 function Login() {
   const [mode, setMode] = useState<"in" | "up">("in");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("patricialdagan729@gmail.com");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -59,10 +59,16 @@ function Login() {
     e.preventDefault(); setBusy(true); setMsg(null);
     if (mode === "in") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) setMsg("Identifiants incorrects ou email non confirmé.");
+      if (error) {
+        if (error.message.includes("Email not confirmed")) {
+          setMsg("Votre compte admin est créé ! Veuillez ouvrir votre boîte mail (patricialdagan729@gmail.com) et cliquer sur le lien de confirmation reçu pour finaliser l'activation.");
+        } else {
+          setMsg(error.message);
+        }
+      }
     } else {
       const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/admin` } });
-      setMsg(error ? error.message : "Compte créé. Vérifiez votre email pour confirmer, puis connectez-vous.");
+      setMsg(error ? error.message : "Compte admin créé avec succès ! Un email de confirmation a été envoyé à votre adresse.");
     }
     setBusy(false);
   };
@@ -111,7 +117,8 @@ function Dashboard({ email }: { email: string }) {
           <h1 className="mt-2 text-4xl">Mes produits</h1>
           <p className="text-xs text-muted-foreground">{email}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Link to="/boutique" className="btn-outline">Voir la boutique</Link>
           <button className="btn-primary" onClick={() => setDraft({ ...emptyProduct, category_id: cats[0]?.id ?? "" })}>+ Ajouter un produit</button>
           <button className="btn-outline" onClick={() => supabase.auth.signOut()}>Déconnexion</button>
         </div>

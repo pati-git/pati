@@ -13,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Header, Footer, WhatsAppFloat } from "@/components/SiteChrome";
+import { WhatsAppProvider } from "@/lib/whatsappContext";
 
 function NotFoundComponent() {
   return (
@@ -86,7 +87,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", type: "image/png", href: "/favicon.png" },
+      { rel: "icon", type: "image/jpeg", href: "/logo.jpg" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Great+Vibes&family=Jost:wght@300;400;500&display=swap" },
@@ -117,12 +118,14 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Header />
-      <main>
-        <Outlet />
-      </main>
-      <Footer />
-      <WhatsAppFloat />
+      <WhatsAppProvider>
+        <Header />
+        <main>
+          <Outlet />
+        </main>
+        <Footer />
+        <WhatsAppFloat />
+      </WhatsAppProvider>
     </QueryClientProvider>
   );
 }
