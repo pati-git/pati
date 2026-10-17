@@ -12,7 +12,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Crochet by Pati' Dagan — Créations crochet faites main" },
-      { name: "description", content: "Vêtements, sacs et accessoires en crochet faits main et personnalisables, pour elle et pour lui à Cotonou." },
+      { name: "description", content: "Vêtements, sacs et accessoires en crochet faits main et personnalisables, pour elle et pour lui à Calavi, Bénin." },
       { property: "og:title", content: "Crochet by Pati' Dagan" },
       { property: "og:description", content: "Créations crochet élégantes, faites main avec passion." },
     ],
@@ -32,7 +32,7 @@ function Index() {
     <>
       <section className="mx-auto grid max-w-6xl items-center gap-10 px-5 pt-10 md:grid-cols-2 md:pt-16">
         <div className="animate-fade-up">
-          <p className="eyebrow">Fait main avec passion · Cotonou</p>
+          <p className="eyebrow">Fait main avec passion · Calavi, Bénin</p>
           <h1 className="mt-4 text-4xl leading-[1.08] sm:text-5xl md:text-6xl font-display">
             L'élégance <br />d'un fil, <span className="font-script text-primary text-5xl sm:text-6xl md:text-7xl block sm:inline">tissé pour vous</span>
           </h1>

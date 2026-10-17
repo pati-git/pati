@@ -282,7 +282,7 @@ function ProductDetailPage() {
                   Origine & Confection
                 </dt>
                 <dd className="mt-1 font-medium text-foreground">
-                  Atelier Pati' Dagan · Cotonou, Bénin 🇧🇯
+                  Atelier Pati' Dagan · Calavi, Bénin 🇧🇯
                 </dd>
               </div>
 
@@ -332,7 +332,7 @@ function ProductDetailPage() {
             <div className="flex flex-col items-center text-center p-3 rounded-xl bg-secondary/40 border border-border/60">
               <Truck className="h-5 w-5 text-primary mb-1.5" />
               <span className="text-[11px] font-medium">Livraison rapide</span>
-              <span className="text-[9px] text-muted-foreground">Cotonou & partout</span>
+              <span className="text-[9px] text-muted-foreground">Calavi & partout</span>
             </div>
           </div>
         </div>

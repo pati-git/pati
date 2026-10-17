@@ -1,6 +1,7 @@
 export const WHATSAPP_PHONE = "2290193552294";
 export const WHATSAPP_URL = "https://wa.me/2290193552294";
 export const TIKTOK_URL = "https://www.tiktok.com/@patriciadagan7";
+export const INSTAGRAM_URL = "https://www.instagram.com/crochetbypatidagan?mdxt=YjQ2djZhZXRqNXc%3D&utm_source=qr";
 export const PHONE = "+229 01 93 55 22 94";
 
 export const formatPrice = (p: number | null) =>

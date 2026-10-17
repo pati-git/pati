@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import logoImg from "@/assets/logo.jpg";
-import { WHATSAPP_URL, TIKTOK_URL, PHONE, formatPrice, type Product } from "@/lib/site";
+import { WHATSAPP_URL, TIKTOK_URL, INSTAGRAM_URL, PHONE, formatPrice, type Product } from "@/lib/site";
 import { useWhatsApp, type InquiryType } from "@/lib/whatsappContext";
 import { productsQuery } from "@/lib/queries";
 import { ArrowLeft, X, Sparkles, MessageCircle, Send, ShoppingBag } from "lucide-react";
@@ -10,6 +10,14 @@ export function WhatsAppIcon({ className = "h-6 w-6" }: { className?: string }) 
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
       <path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35M12.05 21.5h-.01a9.4 9.4 0 0 1-4.79-1.31l-.34-.2-3.56.93.95-3.47-.22-.36a9.4 9.4 0 0 1-1.44-5.01c0-5.2 4.23-9.43 9.43-9.43 2.52 0 4.88.98 6.66 2.77a9.36 9.36 0 0 1 2.76 6.67c0 5.2-4.23 9.42-9.43 9.42m8.02-17.44A11.27 11.27 0 0 0 12.05.75C5.8.75.72 5.83.72 12.08c0 2 .52 3.95 1.52 5.66L.62 23.62l6.01-1.58a11.3 11.3 0 0 0 5.41 1.38h.01c6.25 0 11.33-5.08 11.33-11.33 0-3.03-1.18-5.87-3.32-8.02" />
+    </svg>
+  );
+}
+
+export function InstagramIcon({ className = "h-5 w-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
     </svg>
   );
 }
@@ -56,21 +64,19 @@ export function Header() {
                   DAGAN
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-xs md:text-sm font-medium tracking-[0.12em] sm:tracking-[0.2em] text-muted-foreground uppercase mt-1 sm:mt-1.5">
-                <span>Fait main avec passion</span>
-                <span className="hidden lg:inline text-primary/60">•</span>
-                <span className="hidden lg:inline text-primary">Cotonou, Bénin</span>
-              </div>
+              <p className="text-[9px] sm:text-xs md:text-sm font-medium tracking-[0.18em] sm:tracking-[0.25em] text-muted-foreground uppercase mt-1 sm:mt-1.5 truncate">
+                Fait main avec passion
+              </p>
             </div>
           </Link>
         </div>
 
         {/* Navigation Responsive (Mobile, Tablette, Desktop) */}
-        <nav className="flex items-center gap-2 sm:gap-3 md:gap-6 text-sm tracking-wide shrink-0">
+        <nav className="flex items-center gap-2 sm:gap-4 md:gap-8 text-sm tracking-wide shrink-0">
           {!isHome && (
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-secondary/80 px-2.5 py-1.5 sm:px-3.5 sm:py-2 text-xs font-medium text-foreground transition-all hover:border-cocoa hover:bg-cocoa hover:text-primary-foreground group shadow-xs"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-secondary/80 px-3 py-1.5 sm:px-4 sm:py-2 text-xs font-medium text-foreground transition-all hover:border-cocoa hover:bg-cocoa hover:text-primary-foreground group shadow-xs"
               title="Retour à l'accueil"
             >
               <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5 text-primary group-hover:text-primary-foreground" />
@@ -82,29 +88,18 @@ export function Header() {
             to="/"
             activeOptions={{ exact: true }}
             activeProps={{ className: "text-primary font-semibold" }}
-            className="hover:text-primary transition-colors hidden md:inline font-medium"
+            className="hover:text-primary transition-colors hidden sm:inline font-medium"
           >
             Accueil
           </Link>
 
           <Link
             to="/boutique"
-            activeProps={{ className: "text-primary font-semibold border-primary bg-secondary/60" }}
-            className="rounded-full border border-border/70 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-foreground transition hover:border-cocoa hover:text-primary"
+            activeProps={{ className: "text-primary font-semibold" }}
+            className="hover:text-primary transition-colors font-medium px-3 py-1.5 rounded-full hover:bg-secondary/50"
           >
             Boutique
           </Link>
-
-          <a
-            href={WHATSAPP_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-full bg-whatsapp/15 px-3 py-1.5 sm:px-4 sm:py-2 text-xs font-semibold text-foreground transition hover:bg-whatsapp hover:text-white shadow-xs"
-            title="Contacter sur WhatsApp"
-          >
-            <WhatsAppIcon className="h-4 w-4 text-whatsapp" />
-            <span className="hidden sm:inline">WhatsApp</span>
-          </a>
         </nav>
       </div>
     </header>
@@ -128,9 +123,9 @@ export function Footer() {
           </div>
         </div>
         <div className="text-sm text-muted-foreground">
-          <p className="eyebrow mb-3">Contact & Atelier</p>
+          <p className="eyebrow mb-3">Atelier & Commandes</p>
           <p className="font-medium text-foreground">{PHONE}</p>
-          <p>Cotonou, Bénin</p>
+          <p className="font-medium text-foreground">Calavi, Bénin</p>
           <p className="mt-1 text-xs">Créations artisanales faites main sur mesure & prêtes à porter</p>
         </div>
         <div>
@@ -142,8 +137,19 @@ export function Footer() {
               rel="noreferrer"
               aria-label="WhatsApp"
               className="rounded-full border border-cocoa p-2.5 transition hover:bg-cocoa hover:text-primary-foreground"
+              title="WhatsApp"
             >
               <WhatsAppIcon className="h-5 w-5" />
+            </a>
+            <a
+              href={INSTAGRAM_URL}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Instagram"
+              className="rounded-full border border-cocoa p-2.5 transition hover:bg-cocoa hover:text-primary-foreground"
+              title="Instagram"
+            >
+              <InstagramIcon className="h-5 w-5" />
             </a>
             <a
               href={TIKTOK_URL}
@@ -151,6 +157,7 @@ export function Footer() {
               rel="noreferrer"
               aria-label="TikTok"
               className="rounded-full border border-cocoa p-2.5 transition hover:bg-cocoa hover:text-primary-foreground"
+              title="TikTok"
             >
               <TikTokIcon />
             </a>
@@ -322,7 +329,7 @@ export function WhatsAppFloat() {
               <textarea
                 rows={2}
                 className="field text-xs resize-none"
-                placeholder="Ex : Je souhaite cette pièce en couleur beige clair, livraison Cotonou..."
+                placeholder="Ex : Je souhaite cette pièce en couleur beige clair, livraison Calavi..."
                 value={customerNote}
                 onChange={(e) => setCustomerNote(e.target.value)}
               />
