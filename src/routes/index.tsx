@@ -51,20 +51,20 @@ function Index() {
           <p className="mt-5 max-w-md text-sm sm:text-base text-muted-foreground leading-relaxed">
             Vêtements, sacs et accessoires uniques en crochet d'art, pensés pour elle comme pour lui. Chaque pièce est soigneusement confectionnée à la main et adaptable selon vos envies.
           </p>
-          <div className="mt-6 flex flex-col items-center sm:items-start sm:flex-row gap-2.5 sm:gap-3.5">
+          <div className="mt-6 flex flex-row items-center justify-center sm:justify-start gap-2 sm:gap-3.5 w-full max-w-md">
             <Link
               to="/boutique"
-              className="inline-flex w-[230px] sm:w-auto items-center justify-center gap-2 rounded-full bg-cocoa py-2.5 px-5 sm:py-3 sm:px-6 text-xs sm:text-sm font-medium tracking-wide text-primary-foreground shadow-sm transition hover:bg-primary active:scale-95"
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1 sm:gap-2 rounded-full bg-cocoa py-2.5 px-2.5 sm:py-3 sm:px-6 text-[10.5px] sm:text-xs md:text-sm font-medium tracking-tight sm:tracking-wide text-primary-foreground shadow-sm transition hover:bg-primary active:scale-95 whitespace-nowrap text-center"
             >
               <span>Découvrir la boutique</span>
-              <ArrowRight className="h-3.5 w-3.5" />
+              <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
             </Link>
             <button
               type="button"
               onClick={() => openForm(null, "Je souhaite une commande de crochet personnalisée")}
-              className="inline-flex w-[230px] sm:w-auto items-center justify-center gap-2 rounded-full bg-cocoa py-2.5 px-5 sm:py-3 sm:px-6 text-xs sm:text-sm font-medium tracking-wide text-primary-foreground shadow-sm transition hover:bg-primary active:scale-95 cursor-pointer"
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1 sm:gap-2 rounded-full bg-cocoa py-2.5 px-2.5 sm:py-3 sm:px-6 text-[10.5px] sm:text-xs md:text-sm font-medium tracking-tight sm:tracking-wide text-primary-foreground shadow-sm transition hover:bg-primary active:scale-95 cursor-pointer whitespace-nowrap text-center"
             >
-              <WhatsAppIcon className="h-3.5 w-3.5" />
+              <WhatsAppIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
               <span>Commande personnalisée</span>
             </button>
           </div>
