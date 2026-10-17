@@ -30,29 +30,47 @@ function Index() {
 
   return (
     <>
-      <section className="mx-auto grid max-w-6xl items-center gap-10 px-5 pt-10 md:grid-cols-2 md:pt-16">
+      <section className="mx-auto grid max-w-6xl items-center gap-8 px-4 sm:px-5 pt-8 md:grid-cols-2 md:gap-10 md:pt-16 overflow-hidden">
         <div className="animate-fade-up">
           <p className="eyebrow">Fait main avec passion · Calavi, Bénin</p>
-          <h1 className="mt-4 text-4xl leading-[1.08] sm:text-5xl md:text-6xl font-display">
-            L'élégance <br />d'un fil, <span className="font-script text-primary text-5xl sm:text-6xl md:text-7xl block sm:inline">tissé pour vous</span>
+          <h1 className="mt-4 text-3xl sm:text-5xl md:text-6xl font-display leading-[1.12]">
+            L'élégance <br />d'un fil, <span className="font-script text-primary text-4xl sm:text-6xl md:text-7xl block sm:inline">tissé pour vous</span>
           </h1>
+
+          {/* Image hero pour Mobile (placée entre le titre et le paragraphe) */}
+          <div className="relative my-6 block md:hidden overflow-hidden rounded-2xl shadow-soft">
+            <img
+              src={hero}
+              alt="Créations en crochet Pati'"
+              width={1600}
+              height={1104}
+              className="aspect-[4/3] sm:aspect-[16/10] w-full object-cover"
+            />
+          </div>
+
           <p className="mt-5 max-w-md text-sm sm:text-base text-muted-foreground leading-relaxed">
             Vêtements, sacs et accessoires uniques en crochet d'art, pensés pour elle comme pour lui. Chaque pièce est soigneusement confectionnée à la main et adaptable selon vos envies.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link to="/boutique" className="btn-primary">
-              Découvrir la boutique <ArrowRight className="h-4 w-4" />
+          <div className="mt-6 flex flex-col items-center sm:items-start sm:flex-row gap-2.5 sm:gap-3.5">
+            <Link
+              to="/boutique"
+              className="inline-flex w-[230px] sm:w-auto items-center justify-center gap-2 rounded-full bg-cocoa py-2.5 px-5 sm:py-3 sm:px-6 text-xs sm:text-sm font-medium tracking-wide text-primary-foreground shadow-sm transition hover:bg-primary active:scale-95"
+            >
+              <span>Découvrir la boutique</span>
+              <ArrowRight className="h-3.5 w-3.5" />
             </Link>
             <button
               type="button"
               onClick={() => openForm(null, "Je souhaite une commande de crochet personnalisée")}
-              className="btn-outline cursor-pointer"
+              className="inline-flex w-[230px] sm:w-auto items-center justify-center gap-2 rounded-full bg-cocoa py-2.5 px-5 sm:py-3 sm:px-6 text-xs sm:text-sm font-medium tracking-wide text-primary-foreground shadow-sm transition hover:bg-primary active:scale-95 cursor-pointer"
             >
-              <WhatsAppIcon className="h-4 w-4 text-whatsapp" /> Commande personnalisée
+              <WhatsAppIcon className="h-3.5 w-3.5" />
+              <span>Commande personnalisée</span>
             </button>
           </div>
         </div>
-        <div className="relative">
+        {/* Image hero pour Desktop (colonne droite) */}
+        <div className="relative hidden md:block">
           <div className="absolute -inset-4 -z-10 rounded-[2rem] bg-accent/40 rotate-2 transition duration-500 hover:rotate-1" />
           <img
             src={hero}

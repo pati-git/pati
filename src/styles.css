@@ -64,8 +64,20 @@
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
+  * {
+    border-color: var(--color-border);
+    box-sizing: border-box;
+  }
+  html {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+  }
   body {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+    position: relative;
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);

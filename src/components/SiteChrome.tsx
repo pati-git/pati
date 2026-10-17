@@ -36,7 +36,7 @@ export function Header() {
   const isHome = currentPath === "/";
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/80 bg-background/95 backdrop-blur-md shadow-xs transition-all">
+    <header className="sticky top-0 z-40 border-b border-border/80 bg-background/95 backdrop-blur-md shadow-xs transition-all w-full overflow-x-clip">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-3 py-3 sm:px-6 sm:py-4 md:py-5">
         {/* Logo et Nom de marque agrandis */}
         <div className="flex items-center gap-3 sm:gap-4 md:gap-5 min-w-0">
@@ -351,7 +351,7 @@ export function WhatsAppFloat() {
                 href={whatsappUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-whatsapp py-3 px-4 text-xs font-semibold text-white shadow-md transition hover:brightness-105 active:scale-95"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-cocoa py-3 px-4 text-xs font-semibold text-primary-foreground shadow-md transition hover:bg-primary active:scale-95"
               >
                 <WhatsAppIcon className="h-4 w-4" />
                 <span>Envoyer sur WhatsApp</span>

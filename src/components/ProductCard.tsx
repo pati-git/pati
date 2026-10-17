@@ -55,7 +55,7 @@ export function ProductCard({ p }: { p: Product }) {
               e.preventDefault();
               openForm(p);
             }}
-            className="flex items-center justify-center gap-1.5 rounded-full bg-whatsapp py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-105"
+            className="flex items-center justify-center gap-1.5 rounded-full bg-cocoa py-2 text-xs font-semibold text-primary-foreground shadow-sm transition hover:bg-primary"
           >
             <WhatsAppIcon className="h-4 w-4" /> Commander
           </button>
@@ -92,7 +92,7 @@ export function ProductCard({ p }: { p: Product }) {
         <button
           type="button"
           onClick={() => openForm(p)}
-          className="flex-1 flex items-center justify-center gap-1.5 rounded-full bg-whatsapp py-2 px-3 text-xs font-semibold text-white shadow-xs active:brightness-95"
+          className="flex-1 flex items-center justify-center gap-1.5 rounded-full bg-cocoa py-2 px-3 text-xs font-semibold text-primary-foreground shadow-xs active:bg-primary"
         >
           <WhatsAppIcon className="h-3.5 w-3.5" /> Commander
         </button>

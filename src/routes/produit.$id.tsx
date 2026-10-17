@@ -226,9 +226,9 @@ function ProductDetailPage() {
               href={whatsappDirectUrl}
               target="_blank"
               rel="noreferrer"
-              className="flex w-full items-center justify-center gap-3 rounded-full bg-whatsapp py-4 px-6 text-sm sm:text-base font-semibold text-white shadow-soft transition hover:brightness-105 hover:scale-[1.01] active:scale-95"
+              className="flex w-full items-center justify-center gap-3 rounded-full bg-cocoa py-4 px-6 text-sm sm:text-base font-semibold text-primary-foreground shadow-soft transition hover:bg-primary hover:scale-[1.01] active:scale-95"
             >
-              <WhatsAppIcon className="h-6 w-6 text-white" />
+              <WhatsAppIcon className="h-6 w-6 text-primary-foreground" />
               <span>Commander sur WhatsApp</span>
             </a>
 
@@ -240,9 +240,9 @@ function ProductDetailPage() {
                   `Bonjour Pati', je souhaite échanger sur les options de personnalisation pour la création « ${product.name} »`
                 )
               }
-              className="flex w-full items-center justify-center gap-2 rounded-full border border-cocoa bg-card/80 py-3.5 px-6 text-xs sm:text-sm font-medium text-cocoa transition hover:bg-cocoa hover:text-white"
+              className="flex w-full items-center justify-center gap-2 rounded-full border border-cocoa bg-card/80 py-3.5 px-6 text-xs sm:text-sm font-medium text-cocoa transition hover:bg-cocoa hover:text-primary-foreground cursor-pointer"
             >
-              <Sparkles className="h-4 w-4 text-primary" />
+              <Sparkles className="h-4 w-4 text-cocoa" />
               <span>Personnaliser cette pièce (couleur, taille, mesures)</span>
             </button>
 

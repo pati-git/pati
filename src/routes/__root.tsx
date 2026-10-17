@@ -101,11 +101,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="fr">
+    <html lang="fr" className="overflow-x-hidden max-w-full w-full">
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="overflow-x-hidden max-w-full w-full">
         {children}
         <Scripts />
       </body>
@@ -119,12 +119,14 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <WhatsAppProvider>
-        <Header />
-        <main>
-          <Outlet />
-        </main>
-        <Footer />
-        <WhatsAppFloat />
+        <div className="min-h-screen flex flex-col w-full max-w-full overflow-x-hidden">
+          <Header />
+          <main className="flex-1 w-full max-w-full overflow-x-hidden">
+            <Outlet />
+          </main>
+          <Footer />
+          <WhatsAppFloat />
+        </div>
       </WhatsAppProvider>
     </QueryClientProvider>
   );
