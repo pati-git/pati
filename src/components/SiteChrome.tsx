@@ -1,10 +1,10 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import logoImg from "@/assets/logo.jpg";
 import { WHATSAPP_URL, TIKTOK_URL, INSTAGRAM_URL, PHONE, formatPrice, type Product } from "@/lib/site";
 import { useWhatsApp, type InquiryType } from "@/lib/whatsappContext";
 import { productsQuery } from "@/lib/queries";
-import { ArrowLeft, X, Sparkles, MessageCircle, Send, ShoppingBag } from "lucide-react";
+import { X, Sparkles, MessageCircle, Send, ShoppingBag } from "lucide-react";
 
 export function WhatsAppIcon({ className = "h-6 w-6" }: { className?: string }) {
   return (
@@ -31,25 +31,17 @@ export function TikTokIcon({ className = "h-5 w-5" }: { className?: string }) {
 }
 
 export function Header() {
-  const routerState = useRouterState();
-  const currentPath = routerState.location.pathname;
-  const isHome = currentPath === "/";
-
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-background/95 backdrop-blur-md shadow-xs transition-all w-full overflow-x-clip">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-3 py-3 sm:px-6 sm:py-4 md:py-5">
         {/* Logo et Nom de marque agrandis */}
         <div className="flex items-center gap-3 sm:gap-4 md:gap-5 min-w-0">
           <Link to="/" className="group flex items-center gap-3 sm:gap-4 md:gap-5 transition min-w-0">
-            <div className="relative shrink-0">
+            <div className="shrink-0">
               <img
                 src={logoImg}
                 alt="Crochet by Pati' Dagan"
                 className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-full object-cover shadow-md ring-2 sm:ring-4 ring-primary/25 transition duration-300 group-hover:scale-105 group-hover:ring-primary/50"
-              />
-              <span
-                className="absolute bottom-0 right-0 h-4 w-4 sm:h-5 sm:w-5 rounded-full border-2 border-background bg-whatsapp shadow-xs"
-                title="Atelier ouvert · En ligne sur WhatsApp"
               />
             </div>
             <div className="flex flex-col justify-center min-w-0">
@@ -64,7 +56,7 @@ export function Header() {
                   DAGAN
                 </span>
               </div>
-              <p className="text-[9px] sm:text-xs md:text-sm font-medium tracking-[0.18em] sm:tracking-[0.25em] text-muted-foreground uppercase mt-1 sm:mt-1.5 truncate">
+              <p className="font-script text-base sm:text-2xl md:text-3xl text-primary leading-tight mt-0.5 sm:mt-1 truncate">
                 Fait main avec passion
               </p>
             </div>
@@ -72,23 +64,12 @@ export function Header() {
         </div>
 
         {/* Navigation Responsive (Mobile, Tablette, Desktop) */}
-        <nav className="flex items-center gap-2 sm:gap-4 md:gap-8 text-sm tracking-wide shrink-0">
-          {!isHome && (
-            <Link
-              to="/"
-              className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-secondary/80 px-3 py-1.5 sm:px-4 sm:py-2 text-xs font-medium text-foreground transition-all hover:border-cocoa hover:bg-cocoa hover:text-primary-foreground group shadow-xs"
-              title="Retour à l'accueil"
-            >
-              <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5 text-primary group-hover:text-primary-foreground" />
-              <span className="hidden sm:inline">Accueil</span>
-            </Link>
-          )}
-
+        <nav className="flex items-center gap-3 sm:gap-6 md:gap-8 text-sm tracking-wide shrink-0">
           <Link
             to="/"
             activeOptions={{ exact: true }}
             activeProps={{ className: "text-primary font-semibold" }}
-            className="hover:text-primary transition-colors hidden sm:inline font-medium"
+            className="hover:text-primary transition-colors font-medium px-2 py-1"
           >
             Accueil
           </Link>
