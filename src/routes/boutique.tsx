@@ -14,9 +14,9 @@ export const Route = createFileRoute("/boutique")({
   }),
   head: () => ({
     meta: [
-      { title: "Boutique — Crochet by Pati'" },
+      { title: "Boutique — Crochet by Pati" },
       { name: "description", content: "Toutes nos créations crochet faites main : vêtements, sacs, accessoires et commandes sur-mesure." },
-      { property: "og:title", content: "Boutique — Crochet by Pati'" },
+      { property: "og:title", content: "Boutique — Crochet by Pati" },
       { property: "og:description", content: "Découvrez toutes nos pièces crochet faites main avec passion." },
     ],
   }),

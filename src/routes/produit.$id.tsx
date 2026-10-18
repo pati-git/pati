@@ -32,8 +32,8 @@ export const Route = createFileRoute("/produit/$id")({
   },
   head: ({ loaderData }) => {
     const p = loaderData?.product;
-    const title = p ? `${p.name} — Crochet by Pati' Dagan` : "Détail de la création — Crochet by Pati'";
-    const desc = p?.description ?? "Création crochet faite main avec passion par Pati' Dagan.";
+    const title = p ? `${p.name} — Crochet by Pati` : "Détail de la création — Crochet by Pati";
+    const desc = p?.description ?? "Création crochet faite main avec passion par Pati.";
     return {
       meta: [
         { title },
@@ -142,7 +142,7 @@ function ProductDetailPage() {
               />
             ) : (
               <div className="flex h-full w-full flex-col items-center justify-center bg-accent/20 p-6 text-center">
-                <span className="font-script text-6xl text-primary">Pati'</span>
+                <span className="font-script text-6xl text-primary">Pati</span>
                 <span className="mt-2 text-xs uppercase tracking-widest text-muted-foreground">
                   Fait main avec passion
                 </span>
@@ -215,7 +215,7 @@ function ProductDetailPage() {
               <p className="text-base leading-relaxed">{product.description}</p>
             ) : (
               <p className="text-sm italic text-muted-foreground">
-                Création artisanale unique réalisée à la main au fil de coton et laine douce par la créatrice Pati' Dagan.
+                Création artisanale unique réalisée à la main au fil de coton et laine douce par la créatrice Pati.
               </p>
             )}
           </div>
@@ -237,7 +237,7 @@ function ProductDetailPage() {
               onClick={() =>
                 openForm(
                   product,
-                  `Bonjour Pati', je souhaite échanger sur les options de personnalisation pour la création « ${product.name} »`
+                  `Bonjour Pati, je souhaite échanger sur les options de personnalisation pour la création « ${product.name} »`
                 )
               }
               className="flex w-full items-center justify-center gap-2 rounded-full border border-cocoa bg-card/80 py-3.5 px-6 text-xs sm:text-sm font-medium text-cocoa transition hover:bg-cocoa hover:text-primary-foreground cursor-pointer"
@@ -247,7 +247,7 @@ function ProductDetailPage() {
             </button>
 
             <p className="text-[11px] text-center text-muted-foreground">
-              💬 Réponse personnalisée de Pati' Dagan pour valider vos choix et modalités de livraison.
+              💬 Réponse personnalisée de Pati pour valider vos choix et modalités de livraison.
             </p>
           </div>
 
@@ -282,7 +282,7 @@ function ProductDetailPage() {
                   Origine & Confection
                 </dt>
                 <dd className="mt-1 font-medium text-foreground">
-                  Atelier Pati' Dagan · Calavi, Bénin 🇧🇯
+                  Atelier Pati · Calavi, Bénin 🇧🇯
                 </dd>
               </div>
 

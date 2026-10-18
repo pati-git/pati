@@ -40,7 +40,7 @@ export function Header() {
             <div className="shrink-0">
               <img
                 src={logoImg}
-                alt="Crochet by Pati'"
+                alt="Crochet by Pati"
                 className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-full object-cover shadow-md ring-2 sm:ring-4 ring-primary/25 transition duration-300 group-hover:scale-105 group-hover:ring-primary/50"
               />
             </div>
@@ -50,7 +50,7 @@ export function Header() {
                   Crochet
                 </span>
                 <span className="font-script text-2xl sm:text-4xl md:text-5xl lg:text-6xl text-primary font-normal leading-none -mt-0.5 sm:mt-0">
-                  by Pati'
+                  by Pati
                 </span>
               </div>
               <p className="font-script text-[13px] sm:text-xl md:text-2xl lg:text-3xl text-primary leading-tight mt-0.5 sm:mt-1 truncate">
@@ -91,12 +91,12 @@ export function Footer() {
         <div className="flex items-center gap-4">
           <img
             src={logoImg}
-            alt="Crochet by Pati'"
+            alt="Crochet by Pati"
             className="h-20 w-20 rounded-full object-cover ring-2 ring-primary/20 shadow-soft"
             loading="lazy"
           />
           <div>
-            <p className="font-display text-xl">Crochet by Pati'</p>
+            <p className="font-display text-xl">Crochet by Pati</p>
             <p className="font-script text-2xl text-primary">Fait main avec passion</p>
           </div>
         </div>
@@ -142,9 +142,9 @@ export function Footer() {
           </div>
         </div>
       </div>
-      <p className="pb-6 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} Crochet by Pati' · Tous droits réservés ·{" "}
-        <Link to="/admin" className="hover:text-primary">
+      <p className="pb-10 sm:pb-6 text-center text-xs text-muted-foreground">
+        © {new Date().getFullYear()} Crochet by Pati · Tous droits réservés ·{" "}
+        <Link to="/admin" className="hover:text-primary underline sm:no-underline">
           Espace admin
         </Link>
       </p>
@@ -183,13 +183,13 @@ export function WhatsAppFloat() {
               <div className="relative">
                 <img
                   src={logoImg}
-                  alt="Pati' Dagan"
+                  alt="Pati"
                   className="h-10 w-10 rounded-full border border-white/30 object-cover"
                 />
                 <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border border-cocoa bg-whatsapp" />
               </div>
               <div>
-                <p className="font-display text-base font-semibold leading-tight">Pati' Dagan</p>
+                <p className="font-display text-base font-semibold leading-tight">Pati</p>
                 <p className="text-[11px] text-white/80">En ligne sur WhatsApp</p>
               </div>
             </div>
@@ -232,7 +232,7 @@ export function WhatsAppFloat() {
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center font-script text-lg text-primary">
-                        Pati'
+                        Pati
                       </div>
                     )}
                   </div>
@@ -354,7 +354,7 @@ export function WhatsAppFloat() {
       <button
         onClick={toggleForm}
         aria-label="Discuter sur WhatsApp"
-        className="group fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-whatsapp p-3.5 text-white shadow-soft animate-pulse-ring transition duration-300 hover:scale-105"
+        className="group fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 flex items-center gap-2 rounded-full bg-whatsapp p-3.5 text-white shadow-soft animate-pulse-ring transition duration-300 hover:scale-105"
       >
         <WhatsAppIcon className="h-6 w-6" />
         {selectedProduct && (
@@ -363,7 +363,7 @@ export function WhatsAppFloat() {
           </span>
         )}
         <span className="max-w-0 overflow-hidden whitespace-nowrap text-xs font-medium transition-all duration-300 group-hover:max-w-36">
-          {selectedProduct ? `Commander « ${selectedProduct.name} »` : "Discuter avec Pati'"}
+          {selectedProduct ? `Commander « ${selectedProduct.name} »` : "Discuter avec Pati"}
         </span>
       </button>
     </>

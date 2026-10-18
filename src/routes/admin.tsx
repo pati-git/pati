@@ -10,9 +10,9 @@ import { UploadCloud, Image as ImageIcon, Trash2, CheckCircle2, AlertCircle, Loa
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Espace admin — Crochet by Pati'" },
+      { title: "Espace admin — Crochet by Pati" },
       { name: "description", content: "Gestion des produits et catégories de la boutique." },
-      { property: "og:title", content: "Espace admin — Crochet by Pati'" },
+      { property: "og:title", content: "Espace admin — Crochet by Pati" },
       { property: "og:description", content: "Gestion de la boutique." },
       { name: "robots", content: "noindex" },
     ],

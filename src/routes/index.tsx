@@ -11,9 +11,9 @@ import { ArrowRight, Sparkles } from "lucide-react";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Crochet by Pati' — Créations crochet faites main" },
+      { title: "Crochet by Pati — Créations crochet faites main" },
       { name: "description", content: "Vêtements, sacs et accessoires en crochet faits main et personnalisables, pour elle et pour lui à Calavi, Bénin." },
-      { property: "og:title", content: "Crochet by Pati'" },
+      { property: "og:title", content: "Crochet by Pati" },
       { property: "og:description", content: "Créations crochet élégantes, faites main avec passion." },
     ],
   }),
@@ -40,7 +40,7 @@ function Index() {
           <div className="relative my-6 block md:hidden overflow-hidden rounded-2xl shadow-soft">
             <img
               src={hero}
-              alt="Créations en crochet Pati'"
+              alt="Créations en crochet Pati"
               width={1600}
               height={1104}
               className="aspect-[4/3] sm:aspect-[16/10] w-full object-cover"
@@ -73,7 +73,7 @@ function Index() {
           <div className="absolute -inset-4 -z-10 rounded-[2rem] bg-accent/40 rotate-2 transition duration-500 hover:rotate-1" />
           <img
             src={hero}
-            alt="Créations en crochet Pati'"
+            alt="Créations en crochet Pati"
             width={1600}
             height={1104}
             className="aspect-[4/5] w-full rounded-[1.75rem] object-cover shadow-soft"
@@ -131,14 +131,14 @@ function Index() {
           <p className="font-script text-3xl sm:text-4xl text-primary">Une idée particulière ?</p>
           <h2 className="mt-2 text-3xl sm:text-4xl md:text-5xl font-display">Créons ensemble votre pièce unique</h2>
           <p className="mx-auto mt-4 max-w-xl text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            Couleurs, mensurations, modèles inspirants : partagez vos envies directement avec Pati' Dagan sur WhatsApp, nous confectionnons sur-mesure votre création idéale.
+            Couleurs, mensurations, modèles inspirants : partagez vos envies directement avec Pati sur WhatsApp, nous confectionnons sur-mesure votre création idéale.
           </p>
           <button
             type="button"
-            onClick={() => openForm(null, "Bonjour Pati', j'aimerais créer une pièce unique sur-mesure.")}
+            onClick={() => openForm(null, "Bonjour Pati, j'aimerais créer une pièce unique sur-mesure.")}
             className="btn-primary mt-7 cursor-pointer"
           >
-            <WhatsAppIcon className="h-4 w-4" /> Discuter avec Pati'
+            <WhatsAppIcon className="h-4 w-4" /> Discuter avec Pati
           </button>
         </div>
       </section>

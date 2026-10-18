@@ -28,7 +28,7 @@ export type Product = {
 
 export function buildWhatsAppProductUrl(product: Product, note?: string) {
   const priceStr = formatPrice(product.price);
-  let text = `Bonjour Pati', je souhaite commander votre création « ${product.name} » (${priceStr}).`;
+  let text = `Bonjour Pati, je souhaite commander votre création « ${product.name} » (${priceStr}).`;
   if (note && note.trim()) {
     text += `\n\nPrécisions / personnalisation : ${note.trim()}`;
   } else {
@@ -44,7 +44,7 @@ export function buildWhatsAppInquiryUrl(params: {
   inquiryType?: string;
   note?: string;
 }) {
-  const lines: string[] = ["Bonjour Pati' !"];
+  const lines: string[] = ["Bonjour Pati !"];
   if (params.customerName && params.customerName.trim()) {
     lines.push(`Je m'appelle ${params.customerName.trim()}.`);
   }

@@ -24,7 +24,7 @@ export function ProductCard({ p }: { p: Product }) {
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-accent/20 font-script text-4xl text-primary">
-              Pati'
+              Pati
             </div>
           )}
         </Link>

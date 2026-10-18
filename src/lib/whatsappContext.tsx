@@ -57,7 +57,7 @@ export function WhatsAppProvider({ children }: { children: React.ReactNode }) {
   }, [inquiryType]);
 
   const generatedMessage = useMemo(() => {
-    const lines: string[] = ["Bonjour Pati' !"];
+    const lines: string[] = ["Bonjour Pati !"];
     if (customerName.trim()) {
       lines.push(`Je m'appelle ${customerName.trim()}.`);
     }
