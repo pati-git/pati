@@ -61,14 +61,25 @@ function Login() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         if (error.message.includes("Email not confirmed")) {
-          setMsg("Votre compte admin est créé ! Veuillez ouvrir votre boîte mail (patricialdagan729@gmail.com) et cliquer sur le lien de confirmation reçu pour finaliser l'activation.");
+          setMsg("email_unconfirmed");
         } else {
           setMsg(error.message);
         }
       }
     } else {
       const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/admin` } });
-      setMsg(error ? error.message : "Compte admin créé avec succès ! Un email de confirmation a été envoyé à votre adresse.");
+      setMsg(error ? error.message : "Compte créé ! Si 'Confirm email' est activé sur votre projet Supabase, vérifiez votre boîte mail (et spams) ou confirmez l'utilisateur directement depuis le dashboard Supabase/Lovable.");
+    }
+    setBusy(false);
+  };
+
+  const resendEmail = async () => {
+    setBusy(true);
+    const { error } = await supabase.auth.resend({ type: "signup", email });
+    if (error) {
+      setMsg(`Erreur lors du renvoi : ${error.message}`);
+    } else {
+      setMsg("Email de confirmation renvoyé ! Vérifiez votre boîte de réception et le dossier Spams/Courriers indésirables.");
     }
     setBusy(false);
   };
@@ -80,8 +91,28 @@ function Login() {
       <form onSubmit={submit} className="mt-8 space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
         <input className="field" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         <input className="field" type="password" placeholder="Mot de passe" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} required />
-        <button className="btn-primary w-full" disabled={busy}>{mode === "in" ? "Se connecter" : "Créer le compte"}</button>
-        {msg && <p className="text-center text-sm text-muted-foreground">{msg}</p>}
+        <button className="btn-primary w-full cursor-pointer" disabled={busy}>{mode === "in" ? "Se connecter" : "Créer le compte"}</button>
+        {msg === "email_unconfirmed" ? (
+          <div className="rounded-xl border border-border/80 bg-secondary/50 p-3.5 text-xs text-foreground space-y-2">
+            <p className="font-semibold text-primary">Email non encore confirmé par Supabase</p>
+            <p className="text-muted-foreground leading-relaxed">
+              L'email de vérification envoyé par Supabase peut parfois tarder ou être filtré dans vos spams.
+            </p>
+            <button
+              type="button"
+              onClick={resendEmail}
+              disabled={busy}
+              className="btn-outline w-full py-2 text-xs cursor-pointer"
+            >
+              Renvoyer l'email d'activation
+            </button>
+            <p className="text-[11px] text-muted-foreground pt-1">
+              💡 <strong>Astuce :</strong> Vous pouvez désactiver l'option « Confirm email » dans votre tableau de bord Supabase (Authentication → Providers → Email) pour vous connecter directement sans aucune confirmation.
+            </p>
+          </div>
+        ) : (
+          msg && <p className="text-center text-xs text-muted-foreground">{msg}</p>
+        )}
       </form>
       <button className="mt-4 w-full text-center text-xs text-muted-foreground hover:text-primary" onClick={() => setMode(mode === "in" ? "up" : "in")}>
         {mode === "in" ? "Première visite ? Créer le compte admin" : "J'ai déjà un compte"}
