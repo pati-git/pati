@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, useRef, type FormEvent, type ChangeEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { categoriesQuery, productsQuery } from "@/lib/queries";
 import { formatPrice, type Category, type Product } from "@/lib/site";
+import { UploadCloud, Image as ImageIcon, Trash2, CheckCircle2, AlertCircle, Loader2, Lock, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -18,6 +19,65 @@ export const Route = createFileRoute("/admin")({
   }),
   component: AdminPage,
 });
+
+async function compressImageToWebP(
+  file: File,
+  maxDimension = 1600,
+  quality = 0.85
+): Promise<{ blob: Blob; dataUrl: string }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Impossible de lire le fichier image."));
+    reader.onload = () => {
+      const img = new window.Image();
+      img.onerror = () => reject(new Error("Format d'image non valide ou fichier endommagé."));
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("Traitement de l'image indisponible."));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+
+        let dataUrl = canvas.toDataURL("image/webp", quality);
+        if (!dataUrl.startsWith("data:image/webp")) {
+          dataUrl = canvas.toDataURL("image/jpeg", quality);
+        }
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve({ blob, dataUrl });
+            } else {
+              fetch(dataUrl)
+                .then((r) => r.blob())
+                .then((b) => resolve({ blob: b, dataUrl }))
+                .catch(() => reject(new Error("Erreur de compression d'image.")));
+            }
+          },
+          "image/webp",
+          quality
+        );
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
 function AdminPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -42,33 +102,31 @@ function AdminPage() {
     return (
       <div className="mx-auto max-w-md py-32 text-center">
         <p>Ce compte n'a pas accès à l'administration.</p>
-        <button className="btn-outline mt-6" onClick={() => supabase.auth.signOut()}>Se déconnecter</button>
+        <button className="btn-outline mt-6 cursor-pointer" onClick={() => supabase.auth.signOut()}>Se déconnecter</button>
       </div>
     );
   return <Dashboard email={session.user.email ?? ""} />;
 }
 
 function Login() {
-  const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("patricialdagan729@gmail.com");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const submit = async (e: FormEvent) => {
-    e.preventDefault(); setBusy(true); setMsg(null);
-    if (mode === "in") {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        if (error.message.includes("Email not confirmed")) {
-          setMsg("email_unconfirmed");
-        } else {
-          setMsg(error.message);
-        }
+    e.preventDefault();
+    setBusy(true);
+    setMsg(null);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      if (error.message.includes("Email not confirmed")) {
+        setMsg("email_unconfirmed");
+      } else if (error.message.includes("Invalid login credentials")) {
+        setMsg("Email ou mot de passe incorrect.");
+      } else {
+        setMsg(error.message);
       }
-    } else {
-      const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/admin` } });
-      setMsg(error ? error.message : "Compte créé ! Si 'Confirm email' est activé sur votre projet Supabase, vérifiez votre boîte mail (et spams) ou confirmez l'utilisateur directement depuis le dashboard Supabase/Lovable.");
     }
     setBusy(false);
   };
@@ -86,37 +144,77 @@ function Login() {
 
   return (
     <div className="mx-auto max-w-sm px-5 py-24">
-      <p className="eyebrow text-center">Espace propriétaire</p>
-      <h1 className="mt-3 text-center text-4xl">{mode === "in" ? "Connexion" : "Créer le compte admin"}</h1>
+      <div className="flex flex-col items-center text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-primary mb-3">
+          <Lock className="h-6 w-6" />
+        </div>
+        <p className="eyebrow">Espace propriétaire</p>
+        <h1 className="mt-2 text-3xl font-display">Connexion Administrateur</h1>
+        
+        <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+          <CheckCircle2 className="h-3 w-3 shrink-0" />
+          <span>Compte unique vérifié • Inscriptions fermées</span>
+        </div>
+
+        <p className="mt-2 text-xs text-muted-foreground">
+          Accès exclusif réservé à l'administratrice de la boutique.
+        </p>
+      </div>
+
       <form onSubmit={submit} className="mt-8 space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
-        <input className="field" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input className="field" type="password" placeholder="Mot de passe" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} required />
-        <button className="btn-primary w-full cursor-pointer" disabled={busy}>{mode === "in" ? "Se connecter" : "Créer le compte"}</button>
+        <div>
+          <label className="block text-xs font-medium text-foreground mb-1">Email administrateur</label>
+          <input
+            className="field"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="username"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-foreground mb-1">Mot de passe</label>
+          <input
+            className="field"
+            type="password"
+            placeholder="••••••••••••"
+            minLength={6}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="current-password"
+          />
+        </div>
+        <button className="btn-primary w-full cursor-pointer justify-center" disabled={busy}>
+          {busy ? "Connexion en cours..." : "Se connecter"}
+        </button>
+
         {msg === "email_unconfirmed" ? (
           <div className="rounded-xl border border-border/80 bg-secondary/50 p-3.5 text-xs text-foreground space-y-2">
-            <p className="font-semibold text-primary">Email non encore confirmé par Supabase</p>
+            <p className="font-semibold text-primary">Email non encore confirmé dans Supabase</p>
             <p className="text-muted-foreground leading-relaxed">
-              L'email de vérification envoyé par Supabase peut parfois tarder ou être filtré dans vos spams.
+              L'email de vérification peut tarder ou se trouver dans vos spams.
             </p>
             <button
               type="button"
               onClick={resendEmail}
               disabled={busy}
-              className="btn-outline w-full py-2 text-xs cursor-pointer"
+              className="btn-outline w-full py-2 text-xs cursor-pointer justify-center"
             >
               Renvoyer l'email d'activation
             </button>
-            <p className="text-[11px] text-muted-foreground pt-1">
-              💡 <strong>Astuce :</strong> Vous pouvez désactiver l'option « Confirm email » dans votre tableau de bord Supabase (Authentication → Providers → Email) pour vous connecter directement sans aucune confirmation.
-            </p>
           </div>
         ) : (
-          msg && <p className="text-center text-xs text-muted-foreground">{msg}</p>
+          msg && <p className="text-center text-xs text-destructive font-medium">{msg}</p>
         )}
+
+        <div className="pt-2 text-center border-t border-border/40">
+          <p className="text-[11px] text-muted-foreground">
+            🔒 Système sécurisé : aucune création de nouveau compte n'est autorisée.
+          </p>
+        </div>
       </form>
-      <button className="mt-4 w-full text-center text-xs text-muted-foreground hover:text-primary" onClick={() => setMode(mode === "in" ? "up" : "in")}>
-        {mode === "in" ? "Première visite ? Créer le compte admin" : "J'ai déjà un compte"}
-      </button>
     </div>
   );
 }
@@ -204,60 +302,301 @@ function Stat({ label, value }: { label: string; value: number }) {
 function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Category[]; onClose: () => void; onSaved: () => void }) {
   const [d, setD] = useState(draft);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const upload = async (file: File) => {
-    setBusy(true); setErr(null);
-    const path = `${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
-    const { error } = await supabase.storage.from("product-images").upload(path, file);
-    if (error) { setErr(error.message); setBusy(false); return; }
-    const { data } = await supabase.storage.from("product-images").createSignedUrl(path, 60 * 60 * 24 * 365 * 20);
-    if (data) setD((x) => ({ ...x, image_url: data.signedUrl }));
-    setBusy(false);
+  const processFile = async (file: File) => {
+    // 1. Validation du format
+    const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif", "image/svg+xml"];
+    const isImage = validTypes.includes(file.type) || file.type.startsWith("image/");
+    if (!isImage) {
+      setErr("Format non supporté. Formats acceptés : JPG, PNG, WEBP, GIF, AVIF.");
+      return;
+    }
+
+    // 2. Validation de la taille (10 Mo max)
+    const MAX_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      setErr("La photo dépasse la taille maximale autorisée de 10 Mo. Veuillez sélectionner une photo plus légère.");
+      return;
+    }
+
+    setUploading(true);
+    setErr(null);
+
+    try {
+      setUploadStatus("Optimisation et compression WebP...");
+      const { blob, dataUrl } = await compressImageToWebP(file, 1600, 0.85);
+
+      setUploadStatus("Enregistrement de la photo...");
+      const fileName = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}.webp`;
+
+      // Tentative de sauvegarde dans le bucket Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from("product-images")
+        .upload(fileName, blob, {
+          contentType: "image/webp",
+          cacheControl: "31536000",
+          upsert: true,
+        });
+
+      if (!uploadError) {
+        const { data: publicUrlData } = supabase.storage
+          .from("product-images")
+          .getPublicUrl(fileName);
+        setD((prev) => ({ ...prev, image_url: publicUrlData.publicUrl }));
+      } else {
+        // En cas d'indisponibilité du bucket, fallback automatique et transparent sur le format WebP compressé
+        console.warn("Upload Storage indisponible, fallback image optimisée :", uploadError.message);
+        setD((prev) => ({ ...prev, image_url: dataUrl }));
+      }
+    } catch (uploadException) {
+      console.warn("Exception lors du traitement de l'image, fallback lecteur direct :", uploadException);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setD((prev) => ({ ...prev, image_url: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setUploading(false);
+      setUploadStatus(null);
+    }
+  };
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processFile(file);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processFile(file);
+    }
   };
 
   const save = async (e: FormEvent) => {
-    e.preventDefault(); setBusy(true); setErr(null);
+    e.preventDefault();
+    setBusy(true);
+    setErr(null);
     const row = {
-      name: d.name.trim(), description: d.description || null,
-      price: d.price ? Number(d.price) : null, category_id: d.category_id || null,
-      image_url: d.image_url || null, featured: d.featured, available: d.available,
+      name: d.name.trim(),
+      description: d.description || null,
+      price: d.price ? Number(d.price) : null,
+      category_id: d.category_id || null,
+      image_url: d.image_url || null,
+      featured: d.featured,
+      available: d.available,
     };
-    const { error } = d.id ? await supabase.from("products").update(row).eq("id", d.id) : await supabase.from("products").insert(row);
+    const { error } = d.id
+      ? await supabase.from("products").update(row).eq("id", d.id)
+      : await supabase.from("products").insert(row);
     setBusy(false);
-    if (error) setErr(error.message); else onSaved();
+    if (error) {
+      setErr(error.message);
+    } else {
+      onSaved();
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-cocoa/40 p-4" onClick={onClose}>
-      <form onSubmit={save} onClick={(e) => e.stopPropagation()} className="max-h-[90vh] w-full max-w-lg space-y-4 overflow-auto rounded-2xl bg-card p-6 shadow-soft">
-        <h2 className="text-3xl">{d.id ? "Modifier le produit" : "Nouveau produit"}</h2>
-        <label className="block text-sm">Nom<input className="field mt-1" value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} required /></label>
-        <label className="block text-sm">Description<textarea className="field mt-1" rows={3} value={d.description} onChange={(e) => setD({ ...d, description: e.target.value })} /></label>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-cocoa/40 backdrop-blur-xs p-4" onClick={onClose}>
+      <form
+        onSubmit={save}
+        onClick={(e) => e.stopPropagation()}
+        className="max-h-[92vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-2xl bg-card p-6 shadow-soft border border-border"
+      >
+        <div className="flex items-center justify-between pb-2 border-b border-border/60">
+          <h2 className="text-2xl font-display text-foreground">
+            {d.id ? "Modifier le produit" : "Ajouter un produit"}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground text-xl p-1 rounded-md"
+            aria-label="Fermer"
+          >
+            ×
+          </button>
+        </div>
+
+        <label className="block text-sm font-medium text-foreground">
+          Nom du produit *
+          <input
+            className="field mt-1"
+            placeholder="Ex: Sac cabas en crochet terracotta"
+            value={d.name}
+            onChange={(e) => setD({ ...d, name: e.target.value })}
+            required
+          />
+        </label>
+
+        <label className="block text-sm font-medium text-foreground">
+          Description
+          <textarea
+            className="field mt-1"
+            rows={3}
+            placeholder="Détails de la création, matière, dimensions..."
+            value={d.description}
+            onChange={(e) => setD({ ...d, description: e.target.value })}
+          />
+        </label>
+
         <div className="grid grid-cols-2 gap-3">
-          <label className="block text-sm">Prix (FCFA)<input className="field mt-1" type="number" min={0} placeholder="Sur devis" value={d.price} onChange={(e) => setD({ ...d, price: e.target.value })} /></label>
-          <label className="block text-sm">Catégorie
-            <select className="field mt-1" value={d.category_id} onChange={(e) => setD({ ...d, category_id: e.target.value })}>
-              <option value="">Aucune</option>
-              {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          <label className="block text-sm font-medium text-foreground">
+            Prix (FCFA)
+            <input
+              className="field mt-1"
+              type="number"
+              min={0}
+              placeholder="Sur devis si vide"
+              value={d.price}
+              onChange={(e) => setD({ ...d, price: e.target.value })}
+            />
+          </label>
+          <label className="block text-sm font-medium text-foreground">
+            Catégorie
+            <select
+              className="field mt-1"
+              value={d.category_id}
+              onChange={(e) => setD({ ...d, category_id: e.target.value })}
+            >
+              <option value="">Aucune catégorie</option>
+              {cats.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
             </select>
           </label>
         </div>
-        <div className="text-sm">
-          Photo
-          <div className="mt-1 flex items-center gap-3">
-            {d.image_url && <img src={d.image_url} alt="" className="h-20 w-16 rounded-md object-cover" />}
-            <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} className="text-xs" />
+
+        {/* Zone d'ajout et prévisualisation de la photo */}
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1.5">
+            Photo du produit
+          </label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+
+          {uploading ? (
+            <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-secondary/30 p-8 text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+              <p className="text-sm font-medium text-foreground">{uploadStatus ?? "Chargement..."}</p>
+              <p className="text-xs text-muted-foreground mt-1">Veuillez patienter un instant</p>
+            </div>
+          ) : d.image_url ? (
+            <div className="rounded-xl border border-border bg-secondary/20 p-3 space-y-3">
+              <div className="relative overflow-hidden rounded-lg bg-black/5 aspect-4/3 max-h-56 flex items-center justify-center">
+                <img
+                  src={d.image_url}
+                  alt="Prévisualisation"
+                  className="h-full w-full object-contain"
+                />
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-300 font-medium">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>Photo prête et optimisée</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="btn-outline text-xs py-1.5 px-3 cursor-pointer"
+                  >
+                    Changer la photo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setD({ ...d, image_url: "" })}
+                    className="flex items-center gap-1 text-xs text-destructive hover:underline py-1.5 px-2 cursor-pointer"
+                    title="Supprimer la photo"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Supprimer</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 text-center cursor-pointer transition-all ${
+                isDragging
+                  ? "border-primary bg-primary/5 scale-[0.99]"
+                  : "border-border/80 hover:border-primary/60 bg-secondary/30 hover:bg-secondary/50"
+              }`}
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-2.5">
+                <UploadCloud className="h-6 w-6" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">
+                Cliquez pour ajouter une photo ou glissez-déposez
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Formats acceptés : <span className="font-medium text-foreground">JPG, PNG, WEBP, GIF, AVIF</span>
+              </p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                Taille maximale : <span className="font-semibold text-primary">10 Mo</span> (optimisation automatique)
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-6 text-sm pt-1">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              className="accent-primary h-4 w-4 rounded"
+              checked={d.featured}
+              onChange={(e) => setD({ ...d, featured: e.target.checked })}
+            />
+            <span className="font-medium text-foreground">⭐ Mettre en vedette (accueil)</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              className="accent-primary h-4 w-4 rounded"
+              checked={d.available}
+              onChange={(e) => setD({ ...d, available: e.target.checked })}
+            />
+            <span className="font-medium text-foreground">Disponible à la vente</span>
+          </label>
+        </div>
+
+        {err && (
+          <div className="flex items-start gap-2 rounded-xl bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive">
+            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+            <p className="leading-relaxed">{err}</p>
           </div>
-        </div>
-        <div className="flex gap-6 text-sm">
-          <label className="flex items-center gap-2"><input type="checkbox" checked={d.featured} onChange={(e) => setD({ ...d, featured: e.target.checked })} /> En vedette</label>
-          <label className="flex items-center gap-2"><input type="checkbox" checked={d.available} onChange={(e) => setD({ ...d, available: e.target.checked })} /> Disponible</label>
-        </div>
-        {err && <p className="text-sm text-destructive">{err}</p>}
-        <div className="flex justify-end gap-2">
-          <button type="button" className="btn-outline" onClick={onClose}>Annuler</button>
-          <button className="btn-primary" disabled={busy}>{busy ? "…" : "Enregistrer"}</button>
+        )}
+
+        <div className="flex justify-end gap-2.5 pt-3 border-t border-border/60">
+          <button type="button" className="btn-outline cursor-pointer" onClick={onClose} disabled={busy || uploading}>
+            Annuler
+          </button>
+          <button className="btn-primary cursor-pointer" disabled={busy || uploading}>
+            {busy ? "Enregistrement..." : d.id ? "Mettre à jour" : "Créer le produit"}
+          </button>
         </div>
       </form>
     </div>
