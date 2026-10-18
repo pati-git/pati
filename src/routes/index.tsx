@@ -32,8 +32,7 @@ function Index() {
     <>
       <section className="mx-auto grid max-w-6xl items-center gap-8 px-4 sm:px-5 pt-8 md:grid-cols-2 md:gap-10 md:pt-16 overflow-hidden">
         <div className="animate-fade-up">
-          <p className="eyebrow">Fait main avec passion · Calavi, Bénin</p>
-          <h1 className="mt-4 text-3xl sm:text-5xl md:text-6xl font-display leading-[1.12]">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-display leading-[1.12]">
             L'élégance <br />d'un fil, <span className="font-script text-primary text-4xl sm:text-6xl md:text-7xl block sm:inline">tissé pour vous</span>
           </h1>
 

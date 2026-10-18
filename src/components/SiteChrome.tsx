@@ -45,15 +45,15 @@ export function Header() {
               />
             </div>
             <div className="flex flex-col justify-center min-w-0">
-              <div className="flex items-baseline gap-1.5 sm:gap-2 leading-none">
-                <span className="font-display text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold tracking-tight text-foreground">
+              <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
+                <span className="font-display text-base sm:text-2xl md:text-3xl lg:text-4xl font-semibold tracking-tight text-foreground leading-tight">
                   Crochet
                 </span>
-                <span className="font-script text-2xl sm:text-4xl md:text-5xl lg:text-6xl text-primary font-normal">
+                <span className="font-script text-2xl sm:text-4xl md:text-5xl lg:text-6xl text-primary font-normal leading-none -mt-0.5 sm:mt-0">
                   by Pati'
                 </span>
               </div>
-              <p className="font-script text-base sm:text-2xl md:text-3xl text-primary leading-tight mt-0.5 sm:mt-1 truncate">
+              <p className="font-script text-[13px] sm:text-xl md:text-2xl lg:text-3xl text-primary leading-tight mt-0.5 sm:mt-1 truncate">
                 Fait main avec passion
               </p>
             </div>
