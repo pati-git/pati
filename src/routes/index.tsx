@@ -11,9 +11,9 @@ import { ArrowRight, Sparkles } from "lucide-react";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Crochet by Pati' Dagan — Créations crochet faites main" },
+      { title: "Crochet by Pati' — Créations crochet faites main" },
       { name: "description", content: "Vêtements, sacs et accessoires en crochet faits main et personnalisables, pour elle et pour lui à Calavi, Bénin." },
-      { property: "og:title", content: "Crochet by Pati' Dagan" },
+      { property: "og:title", content: "Crochet by Pati'" },
       { property: "og:description", content: "Créations crochet élégantes, faites main avec passion." },
     ],
   }),

@@ -40,20 +40,17 @@ export function Header() {
             <div className="shrink-0">
               <img
                 src={logoImg}
-                alt="Crochet by Pati' Dagan"
+                alt="Crochet by Pati'"
                 className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-full object-cover shadow-md ring-2 sm:ring-4 ring-primary/25 transition duration-300 group-hover:scale-105 group-hover:ring-primary/50"
               />
             </div>
             <div className="flex flex-col justify-center min-w-0">
-              <div className="flex flex-wrap items-baseline gap-1 sm:gap-2 leading-none">
+              <div className="flex items-baseline gap-1.5 sm:gap-2 leading-none">
                 <span className="font-display text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold tracking-tight text-foreground">
                   Crochet
                 </span>
                 <span className="font-script text-2xl sm:text-4xl md:text-5xl lg:text-6xl text-primary font-normal">
                   by Pati'
-                </span>
-                <span className="font-display text-[11px] sm:text-sm md:text-base font-bold tracking-[0.2em] text-foreground/80 uppercase">
-                  DAGAN
                 </span>
               </div>
               <p className="font-script text-base sm:text-2xl md:text-3xl text-primary leading-tight mt-0.5 sm:mt-1 truncate">
@@ -94,12 +91,12 @@ export function Footer() {
         <div className="flex items-center gap-4">
           <img
             src={logoImg}
-            alt="Crochet by Pati' Dagan"
+            alt="Crochet by Pati'"
             className="h-20 w-20 rounded-full object-cover ring-2 ring-primary/20 shadow-soft"
             loading="lazy"
           />
           <div>
-            <p className="font-display text-xl">Crochet by Pati' Dagan</p>
+            <p className="font-display text-xl">Crochet by Pati'</p>
             <p className="font-script text-2xl text-primary">Fait main avec passion</p>
           </div>
         </div>
@@ -146,7 +143,7 @@ export function Footer() {
         </div>
       </div>
       <p className="pb-6 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} Crochet by Pati' Dagan · Tout droit réservé ·{" "}
+        © {new Date().getFullYear()} Crochet by Pati' · Tous droits réservés ·{" "}
         <Link to="/admin" className="hover:text-primary">
           Espace admin
         </Link>
