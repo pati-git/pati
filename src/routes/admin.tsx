@@ -6,7 +6,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { categoriesQuery, productsQuery } from "@/lib/queries";
 import { formatPrice, type Category, type Product } from "@/lib/site";
 import { saveProductImageServerFn } from "@/lib/uploadImage";
-import { UploadCloud, Image as ImageIcon, Trash2, CheckCircle2, AlertCircle, Loader2, Lock, Plus } from "lucide-react";
+import {
+  UploadCloud,
+  Image as ImageIcon,
+  Trash2,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Lock,
+  Plus,
+  Eye,
+  LogOut,
+  Edit3,
+  Package,
+  FolderTree,
+  Sparkles,
+} from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -244,59 +259,183 @@ function Dashboard({ email }: { email: string }) {
   const list = filter ? products.filter((p) => p.category_id === filter) : products;
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-12">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="mx-auto max-w-6xl px-4 sm:px-5 py-6 sm:py-12">
+      {/* Barre d'en-tête responsive avec boutons d'accès réorganisés */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card/60 backdrop-blur-xs p-4 sm:p-6 rounded-3xl border border-border/80 shadow-xs">
         <div>
-          <p className="eyebrow">Tableau de bord</p>
-          <h1 className="mt-2 text-4xl">Mes produits</h1>
-          <p className="text-xs text-muted-foreground">{email}</p>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary border border-primary/20">
+              Espace Administration
+            </span>
+          </div>
+          <h1 className="mt-1 sm:mt-2 text-2xl sm:text-4xl font-display font-semibold text-foreground">
+            Mes créations
+          </h1>
+          <p className="text-xs text-muted-foreground break-all mt-0.5">{email}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link to="/boutique" className="btn-outline">Voir la boutique</Link>
-          <button className="btn-primary" onClick={() => setDraft({ ...emptyProduct, category_id: cats[0]?.id ?? "" })}>+ Ajouter un produit</button>
-          <button className="btn-outline" onClick={() => supabase.auth.signOut()}>Déconnexion</button>
+
+        {/* Boutons d'accès : organisés clairement, responsive sur mobile */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <button
+            type="button"
+            className="btn-primary justify-center gap-2 text-xs sm:text-sm py-2.5 px-4 shadow-sm cursor-pointer"
+            onClick={() => setDraft({ ...emptyProduct, category_id: cats[0]?.id ?? "" })}
+          >
+            <Plus className="h-4 w-4 shrink-0" />
+            <span>+ Ajouter un produit</span>
+          </button>
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
+            <Link
+              to="/boutique"
+              className="btn-outline justify-center gap-1.5 text-xs sm:text-sm py-2 px-3 text-center"
+            >
+              <Eye className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span>Boutique</span>
+            </Link>
+            <button
+              type="button"
+              className="btn-outline justify-center gap-1.5 text-xs sm:text-sm py-2 px-3 cursor-pointer hover:border-destructive/40 hover:text-destructive"
+              onClick={() => supabase.auth.signOut()}
+            >
+              <LogOut className="h-3.5 w-3.5 shrink-0" />
+              <span>Déconnexion</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        <Stat label="Produits" value={products.length} />
-        <Stat label="Catégories" value={cats.length} />
-        <Stat label="En vedette" value={products.filter((p) => p.featured).length} />
+      {/* Cartes statistiques : DEUX PAR LIGNE sur tous les écrans */}
+      <div className="mt-6 sm:mt-8 grid grid-cols-2 gap-3 sm:gap-4">
+        <Stat
+          label="Total créations"
+          value={products.length}
+          icon={Package}
+          hint="Créations enregistrées"
+        />
+        <Stat
+          label="En vedette"
+          value={products.filter((p) => p.featured).length}
+          icon={Sparkles}
+          hint="Sur la page d'accueil"
+        />
+        <Stat
+          label="Disponibles"
+          value={products.filter((p) => p.available).length}
+          icon={CheckCircle2}
+          hint="Prêtes à la vente"
+        />
+        <Stat
+          label="Catégories"
+          value={cats.length}
+          icon={FolderTree}
+          hint="Rayons de la boutique"
+        />
       </div>
 
-      <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_300px]">
+      <div className="mt-8 sm:mt-10 grid gap-8 lg:grid-cols-[1fr_300px]">
         <div>
-          <select className="field max-w-xs" value={filter} onChange={(e) => setFilter(e.target.value)}>
-            <option value="">Toutes les catégories</option>
-            {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-          <div className="mt-4 divide-y divide-border rounded-2xl border border-border bg-card">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <select
+              className="field w-full sm:max-w-xs text-xs sm:text-sm font-medium"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            >
+              <option value="">Toutes les catégories ({products.length})</option>
+              {cats.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({products.filter((p) => p.category_id === c.id).length})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="divide-y divide-border rounded-2xl border border-border bg-card overflow-hidden shadow-xs">
             {list.map((p) => (
-              <div key={p.id} className="flex items-center gap-4 p-4">
-                <div className="h-16 w-14 shrink-0 overflow-hidden rounded-md bg-muted">
-                  {p.image_url && (
-                    <img
-                      src={p.image_url}
-                      alt=""
-                      className="h-full w-full object-cover"
-                      onError={(e) => {
-                        const target = e.currentTarget;
-                        if (!target.src.endsWith("/images/sac.jpg")) {
-                          target.src = "/images/sac.jpg";
-                        }
-                      }}
-                    />
-                  )}
+              <div
+                key={p.id}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 hover:bg-secondary/15 transition"
+              >
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="h-16 w-14 sm:h-18 sm:w-16 shrink-0 overflow-hidden rounded-xl bg-muted border border-border/60">
+                    {p.image_url ? (
+                      <img
+                        src={p.image_url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          if (!target.src.endsWith("/images/sac.jpg")) {
+                            target.src = "/images/sac.jpg";
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center font-script text-primary text-base">
+                        Pati
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="font-display text-base sm:text-lg font-semibold text-foreground truncate max-w-[220px] sm:max-w-none">
+                        {p.name}
+                      </p>
+                      {p.featured && (
+                        <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                          ★ Vedette
+                        </span>
+                      )}
+                      {!p.available && (
+                        <span className="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                          Sur commande
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate mt-1">
+                      {cats.find((c) => c.id === p.category_id)?.name ?? "Sans catégorie"} ·{" "}
+                      <span className="font-semibold text-primary">{formatPrice(p.price)}</span>
+                    </p>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-display text-lg">{p.name} {p.featured && <span className="text-xs text-primary">★</span>}</p>
-                  <p className="text-xs text-muted-foreground">{cats.find((c) => c.id === p.category_id)?.name ?? "Sans catégorie"} · {formatPrice(p.price)}</p>
+
+                {/* Boutons d'action : pleine largeur sur mobile, stylisés et protégés contre tout débordement */}
+                <div className="flex items-center gap-2 pt-2.5 sm:pt-0 border-t border-border/40 sm:border-0 shrink-0 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-card hover:bg-secondary px-3.5 py-2 text-xs font-semibold text-foreground hover:text-primary transition cursor-pointer shadow-xs active:scale-[0.98]"
+                    onClick={() =>
+                      setDraft({
+                        id: p.id,
+                        name: p.name,
+                        description: p.description ?? "",
+                        price: p.price?.toString() ?? "",
+                        category_id: p.category_id ?? "",
+                        image_url: p.image_url ?? "",
+                        featured: p.featured,
+                        available: p.available,
+                      })
+                    }
+                  >
+                    <Edit3 className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span>Modifier</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-lg border border-destructive/25 bg-destructive/5 hover:bg-destructive/15 px-3.5 py-2 text-xs font-semibold text-destructive transition cursor-pointer shadow-xs active:scale-[0.98]"
+                    onClick={() => remove(p)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 shrink-0" />
+                    <span>Supprimer</span>
+                  </button>
                 </div>
-                <button className="text-sm hover:text-primary" onClick={() => setDraft({ id: p.id, name: p.name, description: p.description ?? "", price: p.price?.toString() ?? "", category_id: p.category_id ?? "", image_url: p.image_url ?? "", featured: p.featured, available: p.available })}>Modifier</button>
-                <button className="text-sm text-destructive" onClick={() => remove(p)}>Supprimer</button>
               </div>
             ))}
-            {list.length === 0 && <p className="p-8 text-center text-sm text-muted-foreground">Aucun produit.</p>}
+            {list.length === 0 && (
+              <div className="p-10 text-center text-sm text-muted-foreground">
+                <Package className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+                <p>Aucun produit dans cette sélection.</p>
+              </div>
+            )}
           </div>
         </div>
         <CategoryManager cats={cats} onChange={refresh} />
@@ -307,11 +446,25 @@ function Dashboard({ email }: { email: string }) {
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({
+  label,
+  value,
+  icon: Icon,
+  hint,
+}: {
+  label: string;
+  value: number;
+  icon?: React.ElementType;
+  hint?: string;
+}) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
-      <p className="eyebrow">{label}</p>
-      <p className="mt-2 font-display text-4xl">{value}</p>
+    <div className="rounded-2xl border border-border bg-card p-3.5 sm:p-5 shadow-xs transition hover:border-primary/40">
+      <div className="flex items-center justify-between gap-1">
+        <p className="eyebrow text-muted-foreground text-[10px] sm:text-xs truncate">{label}</p>
+        {Icon && <Icon className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-primary shrink-0" />}
+      </div>
+      <p className="mt-1 sm:mt-2 font-display text-2xl sm:text-4xl text-foreground font-semibold">{value}</p>
+      {hint && <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{hint}</p>}
     </div>
   );
 }
@@ -420,11 +573,11 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-cocoa/40 backdrop-blur-xs p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-cocoa/40 backdrop-blur-xs p-3 sm:p-4" onClick={onClose}>
       <form
         onSubmit={save}
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[92vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-2xl bg-card p-6 shadow-soft border border-border"
+        className="max-h-[94vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-2xl bg-card p-4 sm:p-6 shadow-soft border border-border"
       >
         <div className="flex items-center justify-between pb-2 border-b border-border/60">
           <h2 className="text-2xl font-display text-foreground">
@@ -462,7 +615,7 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
           />
         </label>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="block text-sm font-medium text-foreground">
             Prix (FCFA)
             <input
@@ -524,23 +677,23 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
                 />
               </div>
               <div className="space-y-2 pt-1">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-300 font-medium">
-                    <CheckCircle2 className="h-4 w-4" />
-                    <span>Photo locale prête : <code className="text-[11px] bg-secondary px-1.5 py-0.5 rounded text-foreground">{d.image_url}</code></span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-300 font-medium min-w-0">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    <span className="truncate">Photo prête et optimisée</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="btn-outline text-xs py-1.5 px-3 cursor-pointer"
+                      className="btn-outline flex-1 sm:flex-initial text-xs py-1.5 px-3 cursor-pointer justify-center"
                     >
-                      Remplacer la photo
+                      Remplacer
                     </button>
                     <button
                       type="button"
                       onClick={() => setD({ ...d, image_url: "" })}
-                      className="flex items-center gap-1 text-xs text-destructive hover:underline py-1.5 px-2 cursor-pointer"
+                      className="inline-flex items-center justify-center gap-1 text-xs text-destructive hover:bg-destructive/10 rounded-lg px-2.5 py-1.5 border border-destructive/20 cursor-pointer"
                       title="Supprimer la photo"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -605,7 +758,7 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
           </div>
         </div>
 
-        <div className="flex gap-6 text-sm pt-1">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 text-sm pt-1">
           <label className="flex items-center gap-2 cursor-pointer select-none">
             <input
               type="checkbox"
@@ -633,11 +786,19 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
           </div>
         )}
 
-        <div className="flex justify-end gap-2.5 pt-3 border-t border-border/60">
-          <button type="button" className="btn-outline cursor-pointer" onClick={onClose} disabled={busy || uploading}>
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-3 border-t border-border/60">
+          <button
+            type="button"
+            className="btn-outline w-full sm:w-auto cursor-pointer justify-center py-2.5 px-4"
+            onClick={onClose}
+            disabled={busy || uploading}
+          >
             Annuler
           </button>
-          <button className="btn-primary cursor-pointer" disabled={busy || uploading}>
+          <button
+            className="btn-primary w-full sm:w-auto cursor-pointer justify-center py-2.5 px-5 font-semibold"
+            disabled={busy || uploading}
+          >
             {busy ? "Enregistrement..." : d.id ? "Mettre à jour" : "Créer le produit"}
           </button>
         </div>
@@ -664,19 +825,54 @@ function CategoryManager({ cats, onChange }: { cats: Category[]; onChange: () =>
     await supabase.from("categories").delete().eq("id", c.id); onChange();
   };
   return (
-    <aside className="h-fit rounded-2xl border border-border bg-secondary/40 p-5">
-      <h2 className="text-2xl">Catégories</h2>
-      <ul className="mt-4 space-y-2">
+    <aside className="h-fit rounded-3xl border border-border bg-card p-4 sm:p-5 shadow-xs">
+      <div className="flex items-center justify-between pb-3 border-b border-border/60">
+        <div className="flex items-center gap-2">
+          <FolderTree className="h-4 w-4 text-primary" />
+          <h2 className="text-xl sm:text-2xl font-display font-semibold text-foreground">Catégories</h2>
+        </div>
+        <span className="text-xs bg-secondary px-2.5 py-0.5 rounded-full text-foreground font-semibold">
+          {cats.length}
+        </span>
+      </div>
+      <ul className="mt-3.5 space-y-2">
         {cats.map((c) => (
-          <li key={c.id} className="flex items-center justify-between rounded-lg bg-card px-3 py-2 text-sm">
-            <span>{c.name}</span>
-            <span className="flex gap-3 text-xs"><button onClick={() => rename(c)} className="hover:text-primary">Renommer</button><button onClick={() => del(c)} className="text-destructive">×</button></span>
+          <li key={c.id} className="flex items-center justify-between gap-2 rounded-xl bg-secondary/30 px-3 py-2 text-sm border border-border/40">
+            <span className="truncate font-medium text-foreground text-xs sm:text-sm">{c.name}</span>
+            <span className="flex items-center gap-1.5 text-xs shrink-0">
+              <button
+                type="button"
+                onClick={() => rename(c)}
+                className="text-xs text-muted-foreground hover:text-primary transition cursor-pointer px-1.5 py-0.5 rounded hover:bg-secondary"
+              >
+                Renommer
+              </button>
+              <button
+                type="button"
+                onClick={() => del(c)}
+                className="h-6 w-6 inline-flex items-center justify-center rounded text-destructive hover:bg-destructive/10 transition cursor-pointer font-bold"
+                title="Supprimer la catégorie"
+              >
+                ×
+              </button>
+            </span>
           </li>
         ))}
       </ul>
       <form onSubmit={add} className="mt-4 flex gap-2">
-        <input className="field" placeholder="Nouvelle catégorie" value={name} onChange={(e) => setName(e.target.value)} />
-        <button className="btn-primary px-4">+</button>
+        <input
+          className="field text-xs sm:text-sm flex-1 min-w-0"
+          placeholder="Nouvelle catégorie"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <button
+          type="submit"
+          className="btn-primary px-3 sm:px-4 cursor-pointer shrink-0 font-semibold"
+          title="Ajouter la catégorie"
+        >
+          +
+        </button>
       </form>
     </aside>
   );
