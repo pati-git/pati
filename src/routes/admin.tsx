@@ -5,6 +5,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { categoriesQuery, productsQuery } from "@/lib/queries";
 import { formatPrice, type Category, type Product } from "@/lib/site";
+import { saveProductImageServerFn } from "@/lib/uploadImage";
 import { UploadCloud, Image as ImageIcon, Trash2, CheckCircle2, AlertCircle, Loader2, Lock, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
@@ -22,8 +23,8 @@ export const Route = createFileRoute("/admin")({
 
 async function compressImageToWebP(
   file: File,
-  maxDimension = 1600,
-  quality = 0.85
+  maxDimension = 1200,
+  quality = 0.82
 ): Promise<{ blob: Blob; dataUrl: string }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -228,7 +229,11 @@ function Dashboard({ email }: { email: string }) {
   const { data: products = [] } = useQuery(productsQuery);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [filter, setFilter] = useState("");
-  const refresh = () => { qc.invalidateQueries({ queryKey: ["products"] }); qc.invalidateQueries({ queryKey: ["categories"] }); };
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["products"] });
+    qc.invalidateQueries({ queryKey: ["categories"] });
+    qc.invalidateQueries({ queryKey: ["product"] });
+  };
 
   const remove = async (p: Product) => {
     if (!confirm(`Supprimer « ${p.name} » ?`)) return;
@@ -269,7 +274,19 @@ function Dashboard({ email }: { email: string }) {
             {list.map((p) => (
               <div key={p.id} className="flex items-center gap-4 p-4">
                 <div className="h-16 w-14 shrink-0 overflow-hidden rounded-md bg-muted">
-                  {p.image_url && <img src={p.image_url} alt="" className="h-full w-full object-cover" />}
+                  {p.image_url && (
+                    <img
+                      src={p.image_url}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        if (!target.src.endsWith("/images/sac.jpg")) {
+                          target.src = "/images/sac.jpg";
+                        }
+                      }}
+                    />
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-display text-lg">{p.name} {p.featured && <span className="text-xs text-primary">★</span>}</p>
@@ -308,6 +325,13 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
   const [err, setErr] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const PRESET_IMAGES = [
+    { label: "Cardigan Terracotta", url: "/images/cardigan.jpg" },
+    { label: "Bonnet Côtelé", url: "/images/bonnet.jpg" },
+    { label: "Sac cabas", url: "/images/sac.jpg" },
+    { label: "Pièce sur-mesure", url: "/images/custom.jpg" },
+  ];
+
   const processFile = async (file: File) => {
     // 1. Validation du format
     const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif", "image/svg+xml"];
@@ -317,10 +341,10 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
       return;
     }
 
-    // 2. Validation de la taille (10 Mo max)
-    const MAX_SIZE = 10 * 1024 * 1024;
+    // 2. Validation de la taille (15 Mo max)
+    const MAX_SIZE = 15 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
-      setErr("La photo dépasse la taille maximale autorisée de 10 Mo. Veuillez sélectionner une photo plus légère.");
+      setErr("La photo dépasse la taille maximale autorisée de 15 Mo. Veuillez sélectionner une photo plus légère.");
       return;
     }
 
@@ -329,37 +353,26 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
 
     try {
       setUploadStatus("Optimisation et compression WebP...");
-      const { blob, dataUrl } = await compressImageToWebP(file, 1600, 0.85);
+      const { dataUrl } = await compressImageToWebP(file, 1200, 0.82);
 
-      setUploadStatus("Enregistrement de la photo...");
-      const fileName = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}.webp`;
+      setUploadStatus("Enregistrement direct dans le dossier public du projet...");
+      const cleanFileName = `${file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "_")}.webp`;
 
-      // Tentative de sauvegarde dans le bucket Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from("product-images")
-        .upload(fileName, blob, {
-          contentType: "image/webp",
-          cacheControl: "31536000",
-          upsert: true,
-        });
+      const res = await saveProductImageServerFn({
+        data: {
+          fileName: cleanFileName,
+          base64Data: dataUrl,
+        },
+      });
 
-      if (!uploadError) {
-        const { data: publicUrlData } = supabase.storage
-          .from("product-images")
-          .getPublicUrl(fileName);
-        setD((prev) => ({ ...prev, image_url: publicUrlData.publicUrl }));
+      if (res?.imageUrl) {
+        setD((prev) => ({ ...prev, image_url: res.imageUrl }));
       } else {
-        // En cas d'indisponibilité du bucket, fallback automatique et transparent sur le format WebP compressé
-        console.warn("Upload Storage indisponible, fallback image optimisée :", uploadError.message);
-        setD((prev) => ({ ...prev, image_url: dataUrl }));
+        throw new Error("Impossible d'obtenir l'URL de l'image enregistrée.");
       }
-    } catch (uploadException) {
-      console.warn("Exception lors du traitement de l'image, fallback lecteur direct :", uploadException);
-      const reader = new FileReader();
-      reader.onload = () => {
-        setD((prev) => ({ ...prev, image_url: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
+    } catch (uploadException: any) {
+      console.error("Erreur lors de l'enregistrement local de la photo :", uploadException);
+      setErr("Erreur d'enregistrement dans le dossier local du projet : " + (uploadException?.message || "Erreur inconnue"));
     } finally {
       setUploading(false);
       setUploadStatus(null);
@@ -481,7 +494,7 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
         {/* Zone d'ajout et prévisualisation de la photo */}
         <div>
           <label className="block text-sm font-medium text-foreground mb-1.5">
-            Photo du produit
+            Photo du produit (stockée localement dans le projet)
           </label>
           <input
             ref={fileInputRef}
@@ -495,7 +508,7 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
             <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-secondary/30 p-8 text-center">
               <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
               <p className="text-sm font-medium text-foreground">{uploadStatus ?? "Chargement..."}</p>
-              <p className="text-xs text-muted-foreground mt-1">Veuillez patienter un instant</p>
+              <p className="text-xs text-muted-foreground mt-1">Traitement et enregistrement dans le projet...</p>
             </div>
           ) : d.image_url ? (
             <div className="rounded-xl border border-border bg-secondary/20 p-3 space-y-3">
@@ -504,30 +517,36 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
                   src={d.image_url}
                   alt="Prévisualisation"
                   className="h-full w-full object-contain"
+                  onError={(e) => {
+                    // Repli visuel si le chemin est incorrect
+                    (e.currentTarget as HTMLImageElement).src = "/images/sac.jpg";
+                  }}
                 />
               </div>
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-300 font-medium">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span>Photo prête et optimisée</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="btn-outline text-xs py-1.5 px-3 cursor-pointer"
-                  >
-                    Changer la photo
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setD({ ...d, image_url: "" })}
-                    className="flex items-center gap-1 text-xs text-destructive hover:underline py-1.5 px-2 cursor-pointer"
-                    title="Supprimer la photo"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    <span>Supprimer</span>
-                  </button>
+              <div className="space-y-2 pt-1">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-300 font-medium">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>Photo locale prête : <code className="text-[11px] bg-secondary px-1.5 py-0.5 rounded text-foreground">{d.image_url}</code></span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="btn-outline text-xs py-1.5 px-3 cursor-pointer"
+                    >
+                      Remplacer la photo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setD({ ...d, image_url: "" })}
+                      className="flex items-center gap-1 text-xs text-destructive hover:underline py-1.5 px-2 cursor-pointer"
+                      title="Supprimer la photo"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span>Retirer</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -550,16 +569,40 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
                 <UploadCloud className="h-6 w-6" />
               </div>
               <p className="text-sm font-semibold text-foreground">
-                Cliquez pour ajouter une photo ou glissez-déposez
+                Cliquez pour importer une photo ou glissez-déposez
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Formats acceptés : <span className="font-medium text-foreground">JPG, PNG, WEBP, GIF, AVIF</span>
               </p>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
-                Taille maximale : <span className="font-semibold text-primary">10 Mo</span> (optimisation automatique)
+                Stockage local haute vitesse dans <code className="text-primary font-medium">public/images/products/</code>
               </p>
             </div>
           )}
+
+          {/* Raccourcis photos existantes du projet */}
+          <div className="mt-3">
+            <p className="text-[11px] font-medium text-muted-foreground mb-1.5">
+              Ou choisir parmi les photos existantes du projet :
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {PRESET_IMAGES.map((preset) => (
+                <button
+                  key={preset.url}
+                  type="button"
+                  onClick={() => setD({ ...d, image_url: preset.url })}
+                  className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition cursor-pointer ${
+                    d.image_url === preset.url
+                      ? "border-primary bg-primary/10 font-medium text-primary"
+                      : "border-border/70 bg-card hover:bg-secondary/70 text-foreground"
+                  }`}
+                >
+                  <ImageIcon className="h-3 w-3 text-primary shrink-0" />
+                  <span>{preset.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="flex gap-6 text-sm pt-1">
