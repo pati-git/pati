@@ -1,8 +1,8 @@
 const ADMIN_AUTH_STORAGE_KEY = "crochet_by_pati_admin_session";
 
 // Hash SHA-256 de mots de passe autorisés pour l'administratrice (hors ligne / autonome)
-// Ex: "paticrochet", "PatiCrochet2026", "paty2026", "2290193552294"
 const AUTHORIZED_HASHES = [
+  "382e00d9af8cb29ca646f715c06169aad00c40a0a2c188d42297a4e6d445b7c8", // patiscollection@2026!
   "995c924181210bd4c4361c3a275040340036bfe35823909208a71514f4292fba", // paticrochet
   "2c08b0db0e0dbc51dea8cc0211c4c19d8d50fd6e633a7d3ebe78de71d1c8e2c0", // PatiCrochet2026
   "5e540ef5df2aef7c84e5f3251fdcd22fdaad6f1da15bcf5f27a53b3c0faa9676", // paty2026
@@ -53,3 +53,4 @@ export function logoutLocalAdmin(): void {
     // Ignoré
   }
 }
+

@@ -93,3 +93,4 @@ export const defaultProducts: Product[] = [
     available: true,
   },
 ];
+

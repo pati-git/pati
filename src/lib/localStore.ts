@@ -85,3 +85,4 @@ export function deleteLocalStoredCategory(id: string): Category[] {
     return [];
   }
 }
+
