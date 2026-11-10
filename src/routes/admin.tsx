@@ -27,6 +27,7 @@ import {
   Lock,
   Plus,
   Eye,
+  EyeOff,
   LogOut,
   Edit3,
   Package,
@@ -148,8 +149,7 @@ function AdminPage() {
       setIsAdmin(null);
       return;
     }
-    supabase
-      .rpc("has_role", { _user_id: session.user.id, _role: "admin" })
+    Promise.resolve(supabase.rpc("has_role", { _user_id: session.user.id, _role: "admin" }))
       .then(({ data }) => setIsAdmin(!!data))
       .catch(() => {
         // Fallback sécurisé : si c'est l'email officiel de Patricia, autoriser l'accès
@@ -201,6 +201,7 @@ function AdminPage() {
 function Login({ onLoggedIn }: { onLoggedIn: () => void }) {
   const [email, setEmail] = useState("patricialdagan729@gmail.com");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -286,16 +287,31 @@ function Login({ onLoggedIn }: { onLoggedIn: () => void }) {
         </div>
         <div>
           <label className="block text-xs font-medium text-foreground mb-1">Mot de passe</label>
-          <input
-            className="field"
-            type="password"
-            placeholder="••••••••••••"
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-          />
+          <div className="relative">
+            <input
+              className="field pr-10"
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••••••"
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition p-1 cursor-pointer rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+              aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+              title={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         </div>
         <button className="btn-primary w-full cursor-pointer justify-center" disabled={busy}>
           {busy ? "Connexion en cours..." : "Se connecter"}
@@ -354,14 +370,21 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
     }
   };
 
-  const remove = async (p: Product) => {
+  const remove = (p: Product) => {
     if (!confirm(`Supprimer « ${p.name} » ?`)) return;
     deleteLocalStoredProduct(p.id);
-    try {
-      await supabase.from("products").delete().eq("id", p.id);
-    } catch {
-      // Ignoré si Supabase est hors ligne
-    }
+
+    // Suppression instantanée du cache React Query pour mise à jour immédiate à l'écran
+    qc.setQueryData<Product[]>(["products"], (old = []) =>
+      old.filter((item) => item.id !== p.id)
+    );
+
+    // Synchronisation distante non-bloquante avec timeout court
+    Promise.race([
+      supabase.from("products").delete().eq("id", p.id),
+      new Promise((_, r) => setTimeout(() => r(new Error("Timeout")), 800)),
+    ]).catch(() => {});
+
     refresh();
   };
 
@@ -579,6 +602,7 @@ function Stat({
 }
 
 function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Category[]; onClose: () => void; onSaved: () => void }) {
+  const qc = useQueryClient();
   const [d, setD] = useState(draft);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -676,25 +700,40 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
     // 1. Sauvegarde locale immédiate (priorité absolue, autonomie complète)
     saveLocalStoredProduct(productItem);
 
-    // 2. Synchronisation secondaire avec Supabase si joignable
-    try {
-      const row = {
-        name: productItem.name,
-        description: productItem.description,
-        price: productItem.price,
-        category_id: productItem.category_id,
-        image_url: productItem.image_url,
-        featured: productItem.featured,
-        available: productItem.available,
-      };
-      if (d.id) {
-        await supabase.from("products").update(row).eq("id", d.id);
-      } else {
-        await supabase.from("products").insert(row);
+    // 2. Mise à jour instantanée du cache React Query (disponibilité immédiate à l'écran)
+    qc.setQueryData<Product[]>(["products"], (old = []) => {
+      const index = old.findIndex((p) => p.id === productItem.id);
+      if (index >= 0) {
+        const next = [...old];
+        next[index] = productItem;
+        return next;
       }
-    } catch {
-      // Si la base externe est hors ligne, le produit reste parfaitement sauvegardé et visible localement
-    }
+      return [productItem, ...old];
+    });
+
+    // 3. Synchronisation distante non-bloquante avec timeout court
+    Promise.race([
+      d.id
+        ? supabase.from("products").update({
+            name: productItem.name,
+            description: productItem.description,
+            price: productItem.price,
+            category_id: productItem.category_id,
+            image_url: productItem.image_url,
+            featured: productItem.featured,
+            available: productItem.available,
+          }).eq("id", d.id)
+        : supabase.from("products").insert({
+            name: productItem.name,
+            description: productItem.description,
+            price: productItem.price,
+            category_id: productItem.category_id,
+            image_url: productItem.image_url,
+            featured: productItem.featured,
+            available: productItem.available,
+          }),
+      new Promise((_, r) => setTimeout(() => r(new Error("Timeout")), 800)),
+    ]).catch(() => {});
 
     setBusy(false);
     onSaved();
@@ -938,6 +977,7 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
 const slugify = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
 function CategoryManager({ cats, onChange }: { cats: Category[]; onChange: () => void }) {
+  const qc = useQueryClient();
   const [name, setName] = useState("");
   const add = async (e: FormEvent) => {
     e.preventDefault();
@@ -950,15 +990,19 @@ function CategoryManager({ cats, onChange }: { cats: Category[]; onChange: () =>
       position: cats.length + 1,
     };
     saveLocalStoredCategory(catItem);
-    try {
-      await supabase.from("categories").insert({
+
+    // Mise à jour instantanée du cache React Query
+    qc.setQueryData<Category[]>(["categories"], (old = []) => [...old, catItem]);
+
+    Promise.race([
+      supabase.from("categories").insert({
         name: catItem.name,
         slug: catItem.slug,
         position: catItem.position,
-      });
-    } catch {
-      // Ignoré si Supabase est hors ligne
-    }
+      }),
+      new Promise((_, r) => setTimeout(() => r(new Error("Timeout")), 800)),
+    ]).catch(() => {});
+
     setName("");
     onChange();
   };
@@ -967,21 +1011,33 @@ function CategoryManager({ cats, onChange }: { cats: Category[]; onChange: () =>
     if (!n?.trim()) return;
     const updated: Category = { ...c, name: n.trim() };
     saveLocalStoredCategory(updated);
-    try {
-      await supabase.from("categories").update({ name: n.trim() }).eq("id", c.id);
-    } catch {
-      // Ignoré si Supabase est hors ligne
-    }
+
+    // Mise à jour instantanée du cache React Query
+    qc.setQueryData<Category[]>(["categories"], (old = []) =>
+      old.map((item) => (item.id === c.id ? updated : item))
+    );
+
+    Promise.race([
+      supabase.from("categories").update({ name: n.trim() }).eq("id", c.id),
+      new Promise((_, r) => setTimeout(() => r(new Error("Timeout")), 800)),
+    ]).catch(() => {});
+
     onChange();
   };
-  const del = async (c: Category) => {
+  const del = (c: Category) => {
     if (!confirm(`Supprimer la catégorie « ${c.name} » ? Les produits resteront sans catégorie.`)) return;
     deleteLocalStoredCategory(c.id);
-    try {
-      await supabase.from("categories").delete().eq("id", c.id);
-    } catch {
-      // Ignoré si Supabase est hors ligne
-    }
+
+    // Suppression instantanée du cache React Query
+    qc.setQueryData<Category[]>(["categories"], (old = []) =>
+      old.filter((item) => item.id !== c.id)
+    );
+
+    Promise.race([
+      supabase.from("categories").delete().eq("id", c.id),
+      new Promise((_, r) => setTimeout(() => r(new Error("Timeout")), 800)),
+    ]).catch(() => {});
+
     onChange();
   };
   return (

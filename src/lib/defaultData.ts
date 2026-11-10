@@ -29,6 +29,20 @@ export const defaultCategories: Category[] = [
     description: "Créations confectionnées selon vos mensurations, couleurs et souhaits.",
     position: 4,
   },
+  {
+    id: "cat-bebe",
+    name: "Bébé & Layette",
+    slug: "bebe-layette",
+    description: "Chaussons doux, bonnets délicats, brassières et doudous pour les tout-petits.",
+    position: 5,
+  },
+  {
+    id: "cat-deco",
+    name: "Maison & Décoration",
+    slug: "maison-deco",
+    description: "Corbeilles artisanales, dessous de plat, housses et décorations uniques.",
+    position: 6,
+  },
 ];
 
 export const defaultProducts: Product[] = [
@@ -92,5 +106,24 @@ export const defaultProducts: Product[] = [
     featured: false,
     available: true,
   },
+  {
+    id: "prod-chaussons-bebe",
+    category_id: "cat-bebe",
+    name: "Petits chaussons bébé au crochet",
+    description: "Chaussons douillets et hypoallergéniques pour nouveau-nés et bébés, tricotés avec une laine extra-douce.",
+    price: 6000,
+    image_url: "/images/products/bonnet.webp",
+    featured: false,
+    available: true,
+  },
+  {
+    id: "prod-corbeille-rangement",
+    category_id: "cat-deco",
+    name: "Corbeille de rangement déco",
+    description: "Panier artisanal en fil de coton tressé, idéal pour organiser avec style le salon, la chambre ou la salle de bain.",
+    price: 10000,
+    image_url: "/images/products/sac.webp",
+    featured: false,
+    available: true,
+  },
 ];
-
