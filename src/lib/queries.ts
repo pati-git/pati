@@ -2,8 +2,9 @@ import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Category, Product } from "./site";
 import { defaultCategories, defaultProducts } from "./defaultData";
+import { getLocalStoredProducts, getLocalStoredCategories } from "./localStore";
 
-const FETCH_TIMEOUT_MS = 2500;
+const FETCH_TIMEOUT_MS = 1500;
 
 function withTimeout<T>(promise: PromiseLike<T>, ms = FETCH_TIMEOUT_MS): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -20,6 +21,25 @@ function withTimeout<T>(promise: PromiseLike<T>, ms = FETCH_TIMEOUT_MS): Promise
   });
 }
 
+function mergeWithLocalCategories(baseCategories: Category[]): Category[] {
+  const localCats = getLocalStoredCategories();
+  if (localCats.length === 0) return baseCategories;
+  const map = new Map<string, Category>();
+  baseCategories.forEach((c) => map.set(c.id, c));
+  localCats.forEach((c) => map.set(c.id, c));
+  return Array.from(map.values()).sort((a, b) => a.position - b.position);
+}
+
+function mergeWithLocalProducts(baseProducts: Product[]): Product[] {
+  const localProds = getLocalStoredProducts();
+  if (localProds.length === 0) return baseProducts;
+  const map = new Map<string, Product>();
+  baseProducts.forEach((p) => map.set(p.id, p));
+  // Les créations ajoutées ou modifiées localement écrasent ou complètent
+  localProds.forEach((p) => map.set(p.id, p));
+  return Array.from(map.values());
+}
+
 export const categoriesQuery = queryOptions({
   queryKey: ["categories"],
   queryFn: async () => {
@@ -28,13 +48,12 @@ export const categoriesQuery = queryOptions({
         supabase.from("categories").select("*").order("position")
       );
       if (res.error || !res.data || res.data.length === 0) {
-        return defaultCategories;
+        return mergeWithLocalCategories(defaultCategories);
       }
-      return res.data as Category[];
+      return mergeWithLocalCategories(res.data as Category[]);
     } catch {
-      // Si la base de données distante est injoignable (ex: erreur 1016, coupure réseau),
-      // le site s'affiche immédiatement avec les catégories enregistrées en local.
-      return defaultCategories;
+      // Chargement immédiat depuis le dossier local du projet
+      return mergeWithLocalCategories(defaultCategories);
     }
   },
 });
@@ -47,16 +66,16 @@ export const productsQuery = queryOptions({
         supabase.from("products").select("*").order("created_at", { ascending: false })
       );
       if (res.error || !res.data || res.data.length === 0) {
-        return defaultProducts;
+        return mergeWithLocalProducts(defaultProducts);
       }
-      return (res.data as Product[]).map((p) => ({
+      const remote = (res.data as Product[]).map((p) => ({
         ...p,
         image_url: p.image_url || "/images/products/sac.webp",
       }));
+      return mergeWithLocalProducts(remote);
     } catch {
-      // Si la base de données distante est injoignable,
-      // affichage instantané et autonome des produits stockés au format WebP dans le projet.
-      return defaultProducts;
+      // Chargement direct depuis les photos locales WebP et le stockage projet
+      return mergeWithLocalProducts(defaultProducts);
     }
   },
 });
@@ -65,6 +84,10 @@ export const productQuery = (id: string) =>
   queryOptions({
     queryKey: ["product", id],
     queryFn: async () => {
+      // Vérifier en priorité les créations du projet stockées localement
+      const local = getLocalStoredProducts().find((p) => p.id === id);
+      if (local) return local;
+
       try {
         const res = await withTimeout(
           supabase.from("products").select("*").eq("id", id).maybeSingle()

@@ -7,6 +7,12 @@ import { categoriesQuery, productsQuery } from "@/lib/queries";
 import { formatPrice, type Category, type Product } from "@/lib/site";
 import { saveProductImageServerFn } from "@/lib/uploadImage";
 import {
+  saveLocalStoredProduct,
+  deleteLocalStoredProduct,
+  saveLocalStoredCategory,
+  deleteLocalStoredCategory,
+} from "@/lib/localStore";
+import {
   UploadCloud,
   Image as ImageIcon,
   Trash2,
@@ -252,7 +258,12 @@ function Dashboard({ email }: { email: string }) {
 
   const remove = async (p: Product) => {
     if (!confirm(`Supprimer « ${p.name} » ?`)) return;
-    await supabase.from("products").delete().eq("id", p.id);
+    deleteLocalStoredProduct(p.id);
+    try {
+      await supabase.from("products").delete().eq("id", p.id);
+    } catch {
+      // Ignoré si Supabase est hors ligne
+    }
     refresh();
   };
 
@@ -552,24 +563,43 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
     e.preventDefault();
     setBusy(true);
     setErr(null);
-    const row = {
+    const productId = d.id || `prod-local-${Date.now()}`;
+    const productItem: Product = {
+      id: productId,
       name: d.name.trim(),
       description: d.description || null,
       price: d.price ? Number(d.price) : null,
       category_id: d.category_id || null,
-      image_url: d.image_url || null,
+      image_url: d.image_url || "/images/products/sac.webp",
       featured: d.featured,
       available: d.available,
     };
-    const { error } = d.id
-      ? await supabase.from("products").update(row).eq("id", d.id)
-      : await supabase.from("products").insert(row);
-    setBusy(false);
-    if (error) {
-      setErr(error.message);
-    } else {
-      onSaved();
+
+    // 1. Sauvegarde locale immédiate (priorité absolue, autonomie complète)
+    saveLocalStoredProduct(productItem);
+
+    // 2. Synchronisation secondaire avec Supabase si joignable
+    try {
+      const row = {
+        name: productItem.name,
+        description: productItem.description,
+        price: productItem.price,
+        category_id: productItem.category_id,
+        image_url: productItem.image_url,
+        featured: productItem.featured,
+        available: productItem.available,
+      };
+      if (d.id) {
+        await supabase.from("products").update(row).eq("id", d.id);
+      } else {
+        await supabase.from("products").insert(row);
+      }
+    } catch {
+      // Si la base externe est hors ligne, le produit reste parfaitement sauvegardé et visible localement
     }
+
+    setBusy(false);
+    onSaved();
   };
 
   return (
@@ -812,17 +842,49 @@ const slugify = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300
 function CategoryManager({ cats, onChange }: { cats: Category[]; onChange: () => void }) {
   const [name, setName] = useState("");
   const add = async (e: FormEvent) => {
-    e.preventDefault(); if (!name.trim()) return;
-    await supabase.from("categories").insert({ name: name.trim(), slug: `${slugify(name)}-${Date.now().toString(36)}`, position: cats.length + 1 });
-    setName(""); onChange();
+    e.preventDefault();
+    if (!name.trim()) return;
+    const catItem: Category = {
+      id: `cat-local-${Date.now()}`,
+      name: name.trim(),
+      slug: `${slugify(name)}-${Date.now().toString(36)}`,
+      description: null,
+      position: cats.length + 1,
+    };
+    saveLocalStoredCategory(catItem);
+    try {
+      await supabase.from("categories").insert({
+        name: catItem.name,
+        slug: catItem.slug,
+        position: catItem.position,
+      });
+    } catch {
+      // Ignoré si Supabase est hors ligne
+    }
+    setName("");
+    onChange();
   };
   const rename = async (c: Category) => {
-    const n = prompt("Nouveau nom", c.name); if (!n?.trim()) return;
-    await supabase.from("categories").update({ name: n.trim() }).eq("id", c.id); onChange();
+    const n = prompt("Nouveau nom", c.name);
+    if (!n?.trim()) return;
+    const updated: Category = { ...c, name: n.trim() };
+    saveLocalStoredCategory(updated);
+    try {
+      await supabase.from("categories").update({ name: n.trim() }).eq("id", c.id);
+    } catch {
+      // Ignoré si Supabase est hors ligne
+    }
+    onChange();
   };
   const del = async (c: Category) => {
     if (!confirm(`Supprimer la catégorie « ${c.name} » ? Les produits resteront sans catégorie.`)) return;
-    await supabase.from("categories").delete().eq("id", c.id); onChange();
+    deleteLocalStoredCategory(c.id);
+    try {
+      await supabase.from("categories").delete().eq("id", c.id);
+    } catch {
+      // Ignoré si Supabase est hors ligne
+    }
+    onChange();
   };
   return (
     <aside className="h-fit rounded-3xl border border-border bg-card p-4 sm:p-5 shadow-xs">
