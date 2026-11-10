@@ -139,8 +139,8 @@ function ProductDetailPage() {
                 alt={product.name}
                 onError={(e) => {
                   const target = e.currentTarget;
-                  if (!target.src.endsWith("/images/sac.jpg")) {
-                    target.src = "/images/sac.jpg";
+                  if (!target.src.endsWith("/images/products/sac.webp")) {
+                    target.src = "/images/products/sac.webp";
                   }
                 }}
                 className="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-105 cursor-zoom-in"
@@ -367,8 +367,8 @@ function ProductDetailPage() {
               alt={product.name}
               onError={(e) => {
                 const target = e.currentTarget;
-                if (!target.src.endsWith("/images/sac.jpg")) {
-                  target.src = "/images/sac.jpg";
+                if (!target.src.endsWith("/images/products/sac.webp")) {
+                  target.src = "/images/products/sac.webp";
                 }
               }}
               className="max-h-[82vh] w-auto rounded-xl object-contain mx-auto"

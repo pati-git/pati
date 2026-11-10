@@ -364,8 +364,8 @@ function Dashboard({ email }: { email: string }) {
                         className="h-full w-full object-cover"
                         onError={(e) => {
                           const target = e.currentTarget;
-                          if (!target.src.endsWith("/images/sac.jpg")) {
-                            target.src = "/images/sac.jpg";
+                          if (!target.src.endsWith("/images/products/sac.webp")) {
+                            target.src = "/images/products/sac.webp";
                           }
                         }}
                       />
@@ -479,10 +479,10 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const PRESET_IMAGES = [
-    { label: "Cardigan Terracotta", url: "/images/cardigan.jpg" },
-    { label: "Bonnet Côtelé", url: "/images/bonnet.jpg" },
-    { label: "Sac cabas", url: "/images/sac.jpg" },
-    { label: "Pièce sur-mesure", url: "/images/custom.jpg" },
+    { label: "Cardigan Terracotta", url: "/images/products/cardigan.webp" },
+    { label: "Bonnet Côtelé", url: "/images/products/bonnet.webp" },
+    { label: "Sac cabas", url: "/images/products/sac.webp" },
+    { label: "Pièce sur-mesure", url: "/images/products/custom.webp" },
   ];
 
   const processFile = async (file: File) => {
@@ -672,7 +672,7 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
                   className="h-full w-full object-contain"
                   onError={(e) => {
                     // Repli visuel si le chemin est incorrect
-                    (e.currentTarget as HTMLImageElement).src = "/images/sac.jpg";
+                    (e.currentTarget as HTMLImageElement).src = "/images/products/sac.webp";
                   }}
                 />
               </div>

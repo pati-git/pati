@@ -22,8 +22,8 @@ export function ProductCard({ p }: { p: Product }) {
               loading="lazy"
               onError={(e) => {
                 const target = e.currentTarget;
-                if (!target.src.endsWith("/images/sac.jpg")) {
-                  target.src = "/images/sac.jpg";
+                if (!target.src.endsWith("/images/products/sac.webp")) {
+                  target.src = "/images/products/sac.webp";
                 }
               }}
               className="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-108"
