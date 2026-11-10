@@ -13,6 +13,11 @@ import {
   deleteLocalStoredCategory,
 } from "@/lib/localStore";
 import {
+  isLocalAdminAuthenticated,
+  verifyLocalAdminPassword,
+  logoutLocalAdmin,
+} from "@/lib/adminAuth";
+import {
   UploadCloud,
   Image as ImageIcon,
   Trash2,
@@ -103,34 +108,97 @@ async function compressImageToWebP(
 
 function AdminPage() {
   const [session, setSession] = useState<Session | null>(null);
+  const [isLocalAuth, setIsLocalAuth] = useState(false);
   const [ready, setReady] = useState(false);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
-    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setReady(true); });
+    // Vérifier d'abord la session locale autonome
+    if (isLocalAdminAuthenticated()) {
+      setIsLocalAuth(true);
+      setIsAdmin(true);
+      setReady(true);
+      return;
+    }
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      setSession(s);
+    });
+
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        setSession(data.session);
+        setReady(true);
+      })
+      .catch(() => {
+        // En cas de panne de la base externe (530), on est prêt pour la connexion locale
+        setReady(true);
+      });
+
     return () => sub.subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (!session) { setIsAdmin(null); return; }
-    supabase.rpc("has_role", { _user_id: session.user.id, _role: "admin" }).then(({ data }) => setIsAdmin(!!data));
-  }, [session]);
+    if (isLocalAuth) {
+      setIsAdmin(true);
+      return;
+    }
+    if (!session) {
+      setIsAdmin(null);
+      return;
+    }
+    supabase
+      .rpc("has_role", { _user_id: session.user.id, _role: "admin" })
+      .then(({ data }) => setIsAdmin(!!data))
+      .catch(() => {
+        // Fallback sécurisé : si c'est l'email officiel de Patricia, autoriser l'accès
+        if (session.user.email === "patricialdagan729@gmail.com") {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
+      });
+  }, [session, isLocalAuth]);
 
   if (!ready) return <div className="py-32 text-center text-muted-foreground">Chargement…</div>;
-  if (!session) return <Login />;
+  if (!session && !isLocalAuth) {
+    return <Login onLoggedIn={() => { setIsLocalAuth(true); setIsAdmin(true); }} />;
+  }
   if (isAdmin === null) return <div className="py-32 text-center text-muted-foreground">Vérification…</div>;
   if (!isAdmin)
     return (
       <div className="mx-auto max-w-md py-32 text-center">
         <p>Ce compte n'a pas accès à l'administration.</p>
-        <button className="btn-outline mt-6 cursor-pointer" onClick={() => supabase.auth.signOut()}>Se déconnecter</button>
+        <button
+          className="btn-outline mt-6 cursor-pointer"
+          onClick={() => {
+            logoutLocalAdmin();
+            setIsLocalAuth(false);
+            supabase.auth.signOut().catch(() => {});
+          }}
+        >
+          Se déconnecter
+        </button>
       </div>
     );
-  return <Dashboard email={session.user.email ?? ""} />;
+
+  const displayEmail = isLocalAuth ? "patricialdagan729@gmail.com" : session?.user.email ?? "patricialdagan729@gmail.com";
+  return (
+    <Dashboard
+      email={displayEmail}
+      onLogout={() => {
+        logoutLocalAdmin();
+        setIsLocalAuth(false);
+        setSession(null);
+        setIsAdmin(null);
+        supabase.auth.signOut().catch(() => {});
+      }}
+    />
+  );
 }
 
-function Login() {
+function Login({ onLoggedIn }: { onLoggedIn: () => void }) {
   const [email, setEmail] = useState("patricialdagan729@gmail.com");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
@@ -140,26 +208,47 @@ function Login() {
     e.preventDefault();
     setBusy(true);
     setMsg(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      if (error.message.includes("Email not confirmed")) {
-        setMsg("email_unconfirmed");
-      } else if (error.message.includes("Invalid login credentials")) {
-        setMsg("Email ou mot de passe incorrect.");
-      } else {
-        setMsg(error.message);
-      }
+
+    // 1. Vérification locale autonome (priorité immédiate sans dépendre de la base 530)
+    const localValid = await verifyLocalAdminPassword(password);
+    if (localValid) {
+      setBusy(false);
+      onLoggedIn();
+      return;
     }
+
+    // 2. Si non reconnu localement, tentative Supabase si joignable
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        if (error.message.includes("Email not confirmed")) {
+          setMsg("email_unconfirmed");
+        } else if (error.message.includes("Invalid login credentials")) {
+          setMsg("Mot de passe incorrect.");
+        } else {
+          setMsg(error.message);
+        }
+      } else {
+        onLoggedIn();
+      }
+    } catch {
+      setMsg("Mot de passe incorrect.");
+    }
+
     setBusy(false);
   };
 
   const resendEmail = async () => {
     setBusy(true);
-    const { error } = await supabase.auth.resend({ type: "signup", email });
-    if (error) {
-      setMsg(`Erreur lors du renvoi : ${error.message}`);
-    } else {
-      setMsg("Email de confirmation renvoyé ! Vérifiez votre boîte de réception et le dossier Spams/Courriers indésirables.");
+    try {
+      const { error } = await supabase.auth.resend({ type: "signup", email });
+      if (error) {
+        setMsg(`Erreur lors du renvoi : ${error.message}`);
+      } else {
+        setMsg("Email de confirmation renvoyé ! Vérifiez votre boîte de réception.");
+      }
+    } catch {
+      setMsg("Service d'email temporairement indisponible.");
     }
     setBusy(false);
   };
@@ -244,7 +333,7 @@ function Login() {
 const emptyProduct = { id: "", name: "", description: "", price: "", category_id: "", image_url: "", featured: false, available: true };
 type Draft = typeof emptyProduct;
 
-function Dashboard({ email }: { email: string }) {
+function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }) {
   const qc = useQueryClient();
   const { data: cats = [] } = useQuery(categoriesQuery);
   const { data: products = [] } = useQuery(productsQuery);
@@ -254,6 +343,15 @@ function Dashboard({ email }: { email: string }) {
     qc.invalidateQueries({ queryKey: ["products"] });
     qc.invalidateQueries({ queryKey: ["categories"] });
     qc.invalidateQueries({ queryKey: ["product"] });
+  };
+
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+    } else {
+      logoutLocalAdmin();
+      supabase.auth.signOut().catch(() => {});
+    }
   };
 
   const remove = async (p: Product) => {
@@ -306,7 +404,7 @@ function Dashboard({ email }: { email: string }) {
             <button
               type="button"
               className="btn-outline justify-center gap-1.5 text-xs sm:text-sm py-2 px-3 cursor-pointer hover:border-destructive/40 hover:text-destructive"
-              onClick={() => supabase.auth.signOut()}
+              onClick={handleLogout}
             >
               <LogOut className="h-3.5 w-3.5 shrink-0" />
               <span>Déconnexion</span>
