@@ -18,6 +18,10 @@ import {
   logoutLocalAdmin,
 } from "@/lib/adminAuth";
 import {
+  PremiumConfirmModal,
+  PremiumPromptModal,
+} from "@/components/PremiumModal";
+import {
   UploadCloud,
   Image as ImageIcon,
   Trash2,
@@ -218,24 +222,23 @@ function Login({ onLoggedIn }: { onLoggedIn: () => void }) {
       return;
     }
 
-    // 2. Si non reconnu localement, tentative Supabase si joignable
+    // 2. Si non reconnu localement, tentative Supabase avec timeout court
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        if (error.message.includes("Email not confirmed")) {
-          setMsg("email_unconfirmed");
-        } else if (error.message.includes("Invalid login credentials")) {
-          setMsg("Mot de passe incorrect.");
-        } else {
-          setMsg(error.message);
-        }
-      } else {
+      const result = await Promise.race([
+        supabase.auth.signInWithPassword({ email, password }),
+        new Promise<any>((_, reject) => setTimeout(() => reject(new Error("timeout")), 1000)),
+      ]);
+      if (result?.data?.session) {
+        setBusy(false);
         onLoggedIn();
+        return;
       }
     } catch {
-      setMsg("Mot de passe incorrect.");
+      // Ignoré
     }
 
+    // Message d'erreur clair et bienveillant (jamais d'erreur technique 530)
+    setMsg("Mot de passe incorrect. Veuillez vérifier votre saisie.");
     setBusy(false);
   };
 
@@ -333,7 +336,12 @@ function Login({ onLoggedIn }: { onLoggedIn: () => void }) {
             </button>
           </div>
         ) : (
-          msg && <p className="text-center text-xs text-destructive font-medium">{msg}</p>
+          msg && (
+            <div className="flex items-center gap-2 rounded-xl bg-destructive/10 border border-destructive/25 p-3 text-xs text-destructive font-medium animate-in fade-in">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{msg}</span>
+            </div>
+          )
         )}
 
         <div className="pt-2 text-center border-t border-border/40">
@@ -355,6 +363,10 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
   const { data: products = [] } = useQuery(productsQuery);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [filter, setFilter] = useState("");
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [categoryToRename, setCategoryToRename] = useState<Category | null>(null);
+
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["products"] });
     qc.invalidateQueries({ queryKey: ["categories"] });
@@ -370,8 +382,7 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
     }
   };
 
-  const remove = (p: Product) => {
-    if (!confirm(`Supprimer « ${p.name} » ?`)) return;
+  const executeRemoveProduct = (p: Product) => {
     deleteLocalStoredProduct(p.id);
 
     // Suppression instantanée du cache React Query pour mise à jour immédiate à l'écran
@@ -382,6 +393,39 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
     // Synchronisation distante non-bloquante avec timeout court
     Promise.race([
       supabase.from("products").delete().eq("id", p.id),
+      new Promise((_, r) => setTimeout(() => r(new Error("Timeout")), 800)),
+    ]).catch(() => {});
+
+    refresh();
+  };
+
+  const executeDeleteCategory = (c: Category) => {
+    deleteLocalStoredCategory(c.id);
+
+    // Suppression instantanée du cache React Query
+    qc.setQueryData<Category[]>(["categories"], (old = []) =>
+      old.filter((item) => item.id !== c.id)
+    );
+
+    Promise.race([
+      supabase.from("categories").delete().eq("id", c.id),
+      new Promise((_, r) => setTimeout(() => r(new Error("Timeout")), 800)),
+    ]).catch(() => {});
+
+    refresh();
+  };
+
+  const executeRenameCategory = (c: Category, newName: string) => {
+    const updated: Category = { ...c, name: newName };
+    saveLocalStoredCategory(updated);
+
+    // Mise à jour instantanée du cache React Query
+    qc.setQueryData<Category[]>(["categories"], (old = []) =>
+      old.map((item) => (item.id === c.id ? updated : item))
+    );
+
+    Promise.race([
+      supabase.from("categories").update({ name: newName }).eq("id", c.id),
       new Promise((_, r) => setTimeout(() => r(new Error("Timeout")), 800)),
     ]).catch(() => {});
 
@@ -554,7 +598,7 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
                   <button
                     type="button"
                     className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-lg border border-destructive/25 bg-destructive/5 hover:bg-destructive/15 px-3.5 py-2 text-xs font-semibold text-destructive transition cursor-pointer shadow-xs active:scale-[0.98]"
-                    onClick={() => remove(p)}
+                    onClick={() => setProductToDelete(p)}
                   >
                     <Trash2 className="h-3.5 w-3.5 shrink-0" />
                     <span>Supprimer</span>
@@ -570,10 +614,73 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
             )}
           </div>
         </div>
-        <CategoryManager cats={cats} onChange={refresh} />
+        <CategoryManager
+          cats={cats}
+          onChange={refresh}
+          onDelete={(c) => setCategoryToDelete(c)}
+          onRename={(c) => setCategoryToRename(c)}
+        />
       </div>
 
-      {draft && <ProductForm draft={draft} cats={cats} onClose={() => setDraft(null)} onSaved={() => { setDraft(null); refresh(); }} />}
+      {draft && (
+        <ProductForm
+          draft={draft}
+          cats={cats}
+          onClose={() => setDraft(null)}
+          onSaved={() => {
+            setDraft(null);
+            refresh();
+          }}
+        />
+      )}
+
+      {/* Modal premium pour suppression de produit */}
+      <PremiumConfirmModal
+        isOpen={productToDelete !== null}
+        onClose={() => setProductToDelete(null)}
+        onConfirm={() => {
+          if (productToDelete) executeRemoveProduct(productToDelete);
+        }}
+        eyebrow="Création · Suppression"
+        title="Supprimer cette création ?"
+        message="Êtes-vous sûre de vouloir supprimer cette création ? Elle sera immédiatement retirée de la boutique."
+        confirmLabel="Supprimer le produit"
+        cancelLabel="Conserver"
+        variant="danger"
+        product={productToDelete}
+      />
+
+      {/* Modal premium pour suppression de catégorie */}
+      <PremiumConfirmModal
+        isOpen={categoryToDelete !== null}
+        onClose={() => setCategoryToDelete(null)}
+        onConfirm={() => {
+          if (categoryToDelete) executeDeleteCategory(categoryToDelete);
+        }}
+        eyebrow="Rayon · Suppression"
+        title="Supprimer cette catégorie ?"
+        message={`Voulez-vous supprimer la catégorie « ${categoryToDelete?.name ?? ""} » ? Les créations qui y étaient associées ne seront pas effacées et deviendront « Sans catégorie »`}
+        confirmLabel="Supprimer la catégorie"
+        cancelLabel="Conserver"
+        variant="danger"
+        category={categoryToDelete}
+      />
+
+      {/* Modal premium pour renommer une catégorie */}
+      <PremiumPromptModal
+        isOpen={categoryToRename !== null}
+        onClose={() => setCategoryToRename(null)}
+        onSubmit={(newName) => {
+          if (categoryToRename) executeRenameCategory(categoryToRename, newName);
+        }}
+        eyebrow="Rayon · Modification"
+        title="Renommer la catégorie"
+        message="Modifiez le titre de ce rayon. Il sera actualisé instantanément sur la boutique."
+        defaultValue={categoryToRename?.name ?? ""}
+        placeholder="Ex: Accessoires Tendances"
+        confirmLabel="Enregistrer le nom"
+        cancelLabel="Annuler"
+      />
     </div>
   );
 }
@@ -976,7 +1083,17 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
 
 const slugify = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
-function CategoryManager({ cats, onChange }: { cats: Category[]; onChange: () => void }) {
+function CategoryManager({
+  cats,
+  onChange,
+  onDelete,
+  onRename,
+}: {
+  cats: Category[];
+  onChange: () => void;
+  onDelete: (c: Category) => void;
+  onRename: (c: Category) => void;
+}) {
   const qc = useQueryClient();
   const [name, setName] = useState("");
   const add = async (e: FormEvent) => {
@@ -1006,40 +1123,7 @@ function CategoryManager({ cats, onChange }: { cats: Category[]; onChange: () =>
     setName("");
     onChange();
   };
-  const rename = async (c: Category) => {
-    const n = prompt("Nouveau nom", c.name);
-    if (!n?.trim()) return;
-    const updated: Category = { ...c, name: n.trim() };
-    saveLocalStoredCategory(updated);
 
-    // Mise à jour instantanée du cache React Query
-    qc.setQueryData<Category[]>(["categories"], (old = []) =>
-      old.map((item) => (item.id === c.id ? updated : item))
-    );
-
-    Promise.race([
-      supabase.from("categories").update({ name: n.trim() }).eq("id", c.id),
-      new Promise((_, r) => setTimeout(() => r(new Error("Timeout")), 800)),
-    ]).catch(() => {});
-
-    onChange();
-  };
-  const del = (c: Category) => {
-    if (!confirm(`Supprimer la catégorie « ${c.name} » ? Les produits resteront sans catégorie.`)) return;
-    deleteLocalStoredCategory(c.id);
-
-    // Suppression instantanée du cache React Query
-    qc.setQueryData<Category[]>(["categories"], (old = []) =>
-      old.filter((item) => item.id !== c.id)
-    );
-
-    Promise.race([
-      supabase.from("categories").delete().eq("id", c.id),
-      new Promise((_, r) => setTimeout(() => r(new Error("Timeout")), 800)),
-    ]).catch(() => {});
-
-    onChange();
-  };
   return (
     <aside className="h-fit rounded-3xl border border-border bg-card p-4 sm:p-5 shadow-xs">
       <div className="flex items-center justify-between pb-3 border-b border-border/60">
@@ -1058,14 +1142,14 @@ function CategoryManager({ cats, onChange }: { cats: Category[]; onChange: () =>
             <span className="flex items-center gap-1.5 text-xs shrink-0">
               <button
                 type="button"
-                onClick={() => rename(c)}
+                onClick={() => onRename(c)}
                 className="text-xs text-muted-foreground hover:text-primary transition cursor-pointer px-1.5 py-0.5 rounded hover:bg-secondary"
               >
                 Renommer
               </button>
               <button
                 type="button"
-                onClick={() => del(c)}
+                onClick={() => onDelete(c)}
                 className="h-6 w-6 inline-flex items-center justify-center rounded text-destructive hover:bg-destructive/10 transition cursor-pointer font-bold"
                 title="Supprimer la catégorie"
               >
