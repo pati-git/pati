@@ -1,0 +1,130 @@
+{
+  "categories": [
+    {
+      "id": "cat-vetements",
+      "name": "Vêtements",
+      "slug": "vetements",
+      "description": "Cardigans, tops, ensembles et tenues uniques crochetés à la main.",
+      "position": 1
+    },
+    {
+      "id": "cat-accessoires",
+      "name": "Accessoires",
+      "slug": "accessoires",
+      "description": "Bonnets, chapeaux, bandeaux et accessoires tendance.",
+      "position": 2
+    },
+    {
+      "id": "cat-sacs",
+      "name": "Sacs & Cabas",
+      "slug": "sacs",
+      "description": "Sacs à main, cabas élégants et pochettes artisanales.",
+      "position": 3
+    },
+    {
+      "id": "cat-sur-mesure",
+      "name": "Sur-mesure",
+      "slug": "sur-mesure",
+      "description": "Créations confectionnées selon vos mensurations, couleurs et souhaits.",
+      "position": 4
+    },
+    {
+      "id": "cat-bebe",
+      "name": "Bébé & Layette",
+      "slug": "bebe-layette",
+      "description": "Chaussons doux, bonnets délicats, brassières et doudous pour les tout-petits.",
+      "position": 5
+    },
+    {
+      "id": "cat-deco",
+      "name": "Maison & Décoration",
+      "slug": "maison-deco",
+      "description": "Corbeilles artisanales, dessous de plat, housses et décorations uniques.",
+      "position": 6
+    }
+  ],
+  "products": [
+    {
+      "id": "prod-cardigan-terracotta",
+      "category_id": "cat-vetements",
+      "name": "Cardigan Terracotta",
+      "description": "Cardigan élégant tricoté à la main en fil de coton doux, teinte terracotta chaleureuse. Idéal pour toutes les saisons.",
+      "price": 25000,
+      "image_url": "/images/products/cardigan.webp",
+      "featured": true,
+      "available": true
+    },
+    {
+      "id": "prod-bonnet-cotele",
+      "category_id": "cat-accessoires",
+      "name": "Bonnet Côtelé",
+      "description": "Bonnet chaud et confortable avec finition côtelée raffinée. Disponible en plusieurs coloris.",
+      "price": 8000,
+      "image_url": "/images/products/bonnet.webp",
+      "featured": true,
+      "available": true
+    },
+    {
+      "id": "prod-sac-cabas",
+      "category_id": "cat-sacs",
+      "name": "Sac Cabas Artisanal",
+      "description": "Grand sac cabas résistant et aéré, crocheté avec soin. Parfait pour les sorties, les cours ou la plage.",
+      "price": 18000,
+      "image_url": "/images/products/sac.webp",
+      "featured": true,
+      "available": true
+    },
+    {
+      "id": "prod-piece-sur-mesure",
+      "category_id": "cat-sur-mesure",
+      "name": "Pièce sur-mesure personnalisée",
+      "description": "Donnez vie à vos inspirations : modèle, point de crochet, coloris et dimensions personnalisés directement avec Pati.",
+      "price": null,
+      "image_url": "/images/products/custom.webp",
+      "featured": true,
+      "available": true
+    },
+    {
+      "id": "prod-complet-ete",
+      "category_id": "cat-vetements",
+      "name": "Complet d'été au crochet",
+      "description": "Ensemble haut et bas estival léger et respirant, fait main pour les journées ensoleillées et événements.",
+      "price": 30000,
+      "image_url": "/images/products/cardigan.webp",
+      "featured": true,
+      "available": true
+    },
+    {
+      "id": "prod-chapeau-crochet",
+      "category_id": "cat-accessoires",
+      "name": "Chapeau de soleil au crochet",
+      "description": "Chapeau cloche protecteur et chic, confectionné avec du fil résistant et agréable au toucher.",
+      "price": 12000,
+      "image_url": "/images/products/bonnet.webp",
+      "featured": true,
+      "available": true
+    },
+    {
+      "id": "prod-chaussons-bebe",
+      "category_id": "cat-bebe",
+      "name": "Petits chaussons bébé au crochet",
+      "description": "Chaussons douillets et hypoallergéniques pour nouveau-nés et bébés, tricotés avec une laine extra-douce.",
+      "price": 6000,
+      "image_url": "/images/products/bonnet.webp",
+      "featured": false,
+      "available": true
+    },
+    {
+      "id": "prod-corbeille-rangement",
+      "category_id": "cat-deco",
+      "name": "Corbeille de rangement déco",
+      "description": "Panier artisanal en fil de coton tressé, idéal pour organiser avec style le salon, la chambre ou la salle de bain.",
+      "price": 10000,
+      "image_url": "/images/products/sac.webp",
+      "featured": false,
+      "available": true
+    }
+  ],
+  "deletedProductIds": [],
+  "deletedCategoryIds": []
+}

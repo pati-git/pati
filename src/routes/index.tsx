@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import hero from "@/assets/hero.jpg";
 import { categoriesQuery, productsQuery } from "@/lib/queries";
 import { ProductCard } from "@/components/ProductCard";
-import { WHATSAPP_URL } from "@/lib/site";
 import { WhatsAppIcon } from "@/components/SiteChrome";
 import { useWhatsApp } from "@/lib/whatsappContext";
 import { ArrowRight, Sparkles } from "lucide-react";
@@ -18,15 +18,32 @@ export const Route = createFileRoute("/")({
     ],
   }),
   loader: ({ context }) =>
-    Promise.all([context.queryClient.ensureQueryData(categoriesQuery), context.queryClient.ensureQueryData(productsQuery)]),
+    Promise.all([
+      context.queryClient.ensureQueryData(categoriesQuery),
+      context.queryClient.ensureQueryData(productsQuery),
+    ]),
   component: Index,
 });
 
 function Index() {
   const { data: cats } = useSuspenseQuery(categoriesQuery);
   const { data: products } = useSuspenseQuery(productsQuery);
+  const { refetch: refetchProducts } = useQuery(productsQuery);
+  const { refetch: refetchCats } = useQuery(categoriesQuery);
   const { openForm } = useWhatsApp();
-  const featured = products.filter((p) => p.featured).slice(0, 6);
+
+  // Forcer la synchronisation fraîche dès que le composant monte sur le client
+  useEffect(() => {
+    refetchProducts();
+    refetchCats();
+  }, [refetchProducts, refetchCats]);
+
+  // Pièces en vedette : créations marquées en vedette, ou créations phares
+  const featuredOnly = products.filter((p) => p.featured);
+  const displayFeatured = (featuredOnly.length > 0 ? featuredOnly : products).slice(0, 6);
+
+  // Nouveautés : créations les plus récentes pour que tout produit ajouté apparaisse immédiatement sur l'accueil
+  const recentProducts = products.slice(0, 6);
 
   return (
     <>
@@ -36,7 +53,7 @@ function Index() {
             L'élégance <br />d'un fil, <span className="font-script text-primary text-4xl sm:text-6xl md:text-7xl block sm:inline">tissé pour vous</span>
           </h1>
 
-          {/* Image hero pour Mobile (placée entre le titre et le paragraphe) */}
+          {/* Image hero pour Mobile */}
           <div className="relative my-6 block md:hidden overflow-hidden rounded-2xl shadow-soft">
             <img
               src={hero}
@@ -68,7 +85,7 @@ function Index() {
             </button>
           </div>
         </div>
-        {/* Image hero pour Desktop (colonne droite) */}
+        {/* Image hero pour Desktop */}
         <div className="relative hidden md:block">
           <div className="absolute -inset-4 -z-10 rounded-[2rem] bg-accent/40 rotate-2 transition duration-500 hover:rotate-1" />
           <img
@@ -81,52 +98,92 @@ function Index() {
         </div>
       </section>
 
-      <section className="mx-auto mt-24 max-w-6xl px-5">
+      {/* Explorer par catégorie */}
+      <section className="mx-auto mt-20 sm:mt-24 max-w-6xl px-5">
         <div className="text-center">
           <p className="eyebrow">Nos univers créatifs</p>
           <h2 className="mt-2 text-3xl sm:text-4xl md:text-5xl font-display">Explorer par catégorie</h2>
         </div>
-        <div className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-4">
-          {cats.map((c, i) => (
-            <Link
-              key={c.id}
-              to="/boutique"
-              search={{ c: c.slug }}
-              className={`group rounded-2xl border border-border p-5 sm:p-6 transition duration-300 hover:-translate-y-1 hover:shadow-soft ${
-                ["bg-secondary/60", "bg-muted", "bg-accent/40", "bg-sage/20"][i % 4]
-              }`}
-            >
-              <p className="font-display text-sm text-primary font-medium">0{i + 1}</p>
-              <h3 className="mt-6 text-xl sm:text-2xl font-display">{c.name}</h3>
-              <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2">{c.description}</p>
-              <p className="mt-4 text-xs font-semibold tracking-widest uppercase text-foreground/80 group-hover:text-primary transition">
-                Voir →
-              </p>
-            </Link>
-          ))}
+        <div className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+          {cats.map((c, i) => {
+            const count = products.filter((p) => p.category_id === c.id).length;
+            return (
+              <Link
+                key={c.id}
+                to="/boutique"
+                search={{ c: c.slug }}
+                className={`group rounded-2xl border border-border p-5 sm:p-6 transition duration-300 hover:-translate-y-1 hover:shadow-soft ${
+                  ["bg-secondary/60", "bg-muted", "bg-accent/40", "bg-sage/20"][i % 4]
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <p className="font-display text-sm text-primary font-medium">0{i + 1}</p>
+                  <span className="text-[11px] font-medium text-muted-foreground bg-card/60 px-2 py-0.5 rounded-full">
+                    {count} création{count > 1 ? "s" : ""}
+                  </span>
+                </div>
+                <h3 className="mt-5 text-xl sm:text-2xl font-display">{c.name}</h3>
+                <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2">{c.description}</p>
+                <p className="mt-4 text-xs font-semibold tracking-widest uppercase text-foreground/80 group-hover:text-primary transition">
+                  Voir →
+                </p>
+              </Link>
+            );
+          })}
         </div>
       </section>
 
-      {featured.length > 0 && (
-        <section className="mx-auto mt-24 max-w-6xl px-5">
-          <div className="flex items-end justify-between">
+      {/* Sélection coup de cœur (Pièces à l'honneur) */}
+      {displayFeatured.length > 0 && (
+        <section className="mx-auto mt-20 sm:mt-24 max-w-6xl px-5">
+          <div className="flex items-end justify-between gap-4">
             <div>
               <p className="eyebrow">Sélection coup de cœur</p>
               <h2 className="mt-2 text-3xl sm:text-4xl md:text-5xl font-display">Pièces à l'honneur</h2>
             </div>
-            <Link to="/boutique" className="text-xs sm:text-sm font-medium underline-offset-4 hover:underline hover:text-primary">
+            <Link
+              to="/boutique"
+              className="text-xs sm:text-sm font-medium underline-offset-4 hover:underline hover:text-primary whitespace-nowrap"
+            >
               Voir toute la boutique →
             </Link>
           </div>
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {featured.map((p) => (
+            {displayFeatured.map((p) => (
               <ProductCard key={p.id} p={p} />
             ))}
           </div>
         </section>
       )}
 
-      <section className="mx-auto mt-24 max-w-4xl px-5 text-center">
+      {/* Dernières créations ajoutées */}
+      {recentProducts.length > 0 && recentProducts !== displayFeatured && (
+        <section className="mx-auto mt-20 sm:mt-24 max-w-6xl px-5">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <p className="eyebrow">Nouveautés de l'atelier</p>
+              </div>
+              <h2 className="mt-2 text-3xl sm:text-4xl md:text-5xl font-display">Dernières créations</h2>
+            </div>
+            <Link
+              to="/boutique"
+              className="text-xs sm:text-sm font-medium underline-offset-4 hover:underline hover:text-primary whitespace-nowrap"
+            >
+              Toutes les pièces ({products.length}) →
+            </Link>
+          </div>
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {recentProducts.map((p) => (
+              <ProductCard key={p.id} p={p} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Appel à l'action commande sur-mesure */}
+      <section className="mx-auto mt-20 sm:mt-24 max-w-4xl px-5 text-center">
         <div className="rounded-3xl border border-border/70 bg-secondary/30 p-8 sm:p-12 shadow-sm">
           <p className="font-script text-3xl sm:text-4xl text-primary">Une idée particulière ?</p>
           <h2 className="mt-2 text-3xl sm:text-4xl md:text-5xl font-display">Créons ensemble votre pièce unique</h2>

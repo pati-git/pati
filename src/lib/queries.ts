@@ -8,6 +8,7 @@ import {
   getDeletedProductIds,
   getDeletedCategoryIds,
 } from "./localStore";
+import { getCatalogServerFn } from "./serverCatalog";
 
 const FETCH_TIMEOUT_MS = 1000;
 
@@ -72,67 +73,113 @@ function mergeWithLocalProducts(baseProducts: Product[]): Product[] {
 
 export const categoriesQuery = queryOptions({
   queryKey: ["categories"],
+  staleTime: 0,
+  gcTime: 1000 * 60 * 10,
+  refetchOnMount: "always",
+  refetchOnWindowFocus: true,
   queryFn: async () => {
+    let baseCategories = defaultCategories;
+
+    // 1. Charger depuis le catalogue serveur (partagé entre tous les clients)
+    try {
+      const serverCatalog = await getCatalogServerFn();
+      if (serverCatalog?.categories && serverCatalog.categories.length > 0) {
+        baseCategories = serverCatalog.categories;
+      }
+    } catch {
+      // Fallback
+    }
+
+    // 2. Synchroniser avec Supabase si actif
     try {
       const res = await withTimeout(
         supabase.from("categories").select("*").order("position")
       );
-      if (res.error || !res.data || res.data.length === 0) {
-        return mergeWithLocalCategories(defaultCategories);
+      if (res.data && res.data.length > 0) {
+        baseCategories = res.data as Category[];
       }
-      return mergeWithLocalCategories(res.data as Category[]);
     } catch {
-      // Chargement immédiat depuis le stockage local et le dossier projet
-      return mergeWithLocalCategories(defaultCategories);
+      // Ignoré si indisponible
     }
+
+    return mergeWithLocalCategories(baseCategories);
   },
 });
 
 export const productsQuery = queryOptions({
   queryKey: ["products"],
+  staleTime: 0,
+  gcTime: 1000 * 60 * 10,
+  refetchOnMount: "always",
+  refetchOnWindowFocus: true,
   queryFn: async () => {
+    let baseProducts = defaultProducts;
+
+    // 1. Charger depuis le catalogue serveur persistant (partagé pour tous les clients)
+    try {
+      const serverCatalog = await getCatalogServerFn();
+      if (serverCatalog?.products && serverCatalog.products.length > 0) {
+        baseProducts = serverCatalog.products;
+      }
+    } catch {
+      // Fallback
+    }
+
+    // 2. Synchroniser avec Supabase si actif
     try {
       const res = await withTimeout(
         supabase.from("products").select("*").order("created_at", { ascending: false })
       );
-      if (res.error || !res.data || res.data.length === 0) {
-        return mergeWithLocalProducts(defaultProducts);
+      if (res.data && res.data.length > 0) {
+        const remote = (res.data as Product[]).map((p) => ({
+          ...p,
+          image_url: p.image_url || "/images/products/sac.webp",
+        }));
+        baseProducts = remote;
       }
-      const remote = (res.data as Product[]).map((p) => ({
-        ...p,
-        image_url: p.image_url || "/images/products/sac.webp",
-      }));
-      return mergeWithLocalProducts(remote);
     } catch {
-      // Chargement direct depuis les photos locales WebP et le stockage projet
-      return mergeWithLocalProducts(defaultProducts);
+      // Ignoré si indisponible
     }
+
+    return mergeWithLocalProducts(baseProducts);
   },
 });
 
 export const productQuery = (id: string) =>
   queryOptions({
     queryKey: ["product", id],
+    staleTime: 0,
+    gcTime: 1000 * 60 * 10,
+    refetchOnMount: "always",
     queryFn: async () => {
       const deletedIds = new Set(getDeletedProductIds());
       if (deletedIds.has(id)) return null;
 
-      // Vérifier en priorité les créations du projet stockées localement
+      // 1. Vérifier en priorité les créations du projet stockées localement
       const local = getLocalStoredProducts().find((p) => p.id === id);
       if (local) return local;
 
+      // 2. Vérifier dans le catalogue serveur
+      try {
+        const serverCatalog = await getCatalogServerFn();
+        const found = serverCatalog.products.find((p) => p.id === id);
+        if (found && !deletedIds.has(found.id)) return found;
+      } catch {
+        // Fallback
+      }
+
+      // 3. Vérifier avec Supabase si actif
       try {
         const res = await withTimeout(
           supabase.from("products").select("*").eq("id", id).maybeSingle()
         );
-        if (res.error || !res.data) {
-          const fallback = defaultProducts.find((p) => p.id === id);
-          return fallback && !deletedIds.has(fallback.id) ? fallback : null;
-        }
-        return res.data as Product;
+        if (res.data) return res.data as Product;
       } catch {
-        const fallback = defaultProducts.find((p) => p.id === id);
-        return fallback && !deletedIds.has(fallback.id) ? fallback : null;
+        // Fallback
       }
+
+      // 4. Fallback statique
+      const fallback = defaultProducts.find((p) => p.id === id);
+      return fallback && !deletedIds.has(fallback.id) ? fallback : null;
     },
   });

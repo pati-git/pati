@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { categoriesQuery, productsQuery } from "@/lib/queries";
 import { ProductCard } from "@/components/ProductCard";
 import { ArrowLeft, Sparkles } from "lucide-react";
@@ -29,6 +30,14 @@ function Boutique() {
   const { c } = Route.useSearch();
   const { data: cats } = useSuspenseQuery(categoriesQuery);
   const { data: products } = useSuspenseQuery(productsQuery);
+  const { refetch: refetchProducts } = useQuery(productsQuery);
+  const { refetch: refetchCats } = useQuery(categoriesQuery);
+
+  useEffect(() => {
+    refetchProducts();
+    refetchCats();
+  }, [refetchProducts, refetchCats]);
+
   const shown = c ? cats.filter((x) => x.slug === c) : cats;
   const uncategorized = products.filter((p) => !p.category_id || !cats.some((x) => x.id === p.category_id));
 

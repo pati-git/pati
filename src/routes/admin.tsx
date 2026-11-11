@@ -7,6 +7,12 @@ import { categoriesQuery, productsQuery } from "@/lib/queries";
 import { formatPrice, type Category, type Product } from "@/lib/site";
 import { saveProductImageServerFn } from "@/lib/uploadImage";
 import {
+  saveProductServerFn,
+  deleteProductServerFn,
+  saveCategoryServerFn,
+  deleteCategoryServerFn,
+} from "@/lib/serverCatalog";
+import {
   saveLocalStoredProduct,
   deleteLocalStoredProduct,
   saveLocalStoredCategory,
@@ -390,7 +396,10 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
       old.filter((item) => item.id !== p.id)
     );
 
-    // Synchronisation distante non-bloquante avec timeout court
+    // Synchronisation sur le serveur (pour tous les visiteurs)
+    deleteProductServerFn({ data: { id: p.id } }).catch(() => {});
+
+    // Synchronisation distante secondaire
     Promise.race([
       supabase.from("products").delete().eq("id", p.id),
       new Promise((_, r) => setTimeout(() => r(new Error("Timeout")), 800)),
@@ -406,6 +415,9 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
     qc.setQueryData<Category[]>(["categories"], (old = []) =>
       old.filter((item) => item.id !== c.id)
     );
+
+    // Synchronisation sur le serveur (pour tous les visiteurs)
+    deleteCategoryServerFn({ data: { id: c.id } }).catch(() => {});
 
     Promise.race([
       supabase.from("categories").delete().eq("id", c.id),
@@ -423,6 +435,9 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
     qc.setQueryData<Category[]>(["categories"], (old = []) =>
       old.map((item) => (item.id === c.id ? updated : item))
     );
+
+    // Synchronisation sur le serveur (pour tous les visiteurs)
+    saveCategoryServerFn({ data: { category: updated } }).catch(() => {});
 
     Promise.race([
       supabase.from("categories").update({ name: newName }).eq("id", c.id),
@@ -807,7 +822,10 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
     // 1. Sauvegarde locale immédiate (priorité absolue, autonomie complète)
     saveLocalStoredProduct(productItem);
 
-    // 2. Mise à jour instantanée du cache React Query (disponibilité immédiate à l'écran)
+    // 2. Synchronisation sur le serveur (pour tous les clients de la boutique)
+    saveProductServerFn({ data: { product: productItem } }).catch(() => {});
+
+    // 3. Mise à jour instantanée du cache React Query (disponibilité immédiate à l'écran)
     qc.setQueryData<Product[]>(["products"], (old = []) => {
       const index = old.findIndex((p) => p.id === productItem.id);
       if (index >= 0) {
@@ -818,7 +836,7 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
       return [productItem, ...old];
     });
 
-    // 3. Synchronisation distante non-bloquante avec timeout court
+    // 4. Synchronisation distante secondaire non-bloquante avec timeout court
     Promise.race([
       d.id
         ? supabase.from("products").update({
@@ -1107,6 +1125,9 @@ function CategoryManager({
       position: cats.length + 1,
     };
     saveLocalStoredCategory(catItem);
+
+    // Synchronisation sur le serveur (pour tous les visiteurs)
+    saveCategoryServerFn({ data: { category: catItem } }).catch(() => {});
 
     // Mise à jour instantanée du cache React Query
     qc.setQueryData<Category[]>(["categories"], (old = []) => [...old, catItem]);
