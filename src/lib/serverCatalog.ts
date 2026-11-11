@@ -208,3 +208,4 @@ export const deleteCategoryServerFn = createServerFn({ method: "POST" })
     await persistCatalogToStorage(updatedStore);
     return updatedStore;
   });
+

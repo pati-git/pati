@@ -137,10 +137,16 @@ function ProductDetailPage() {
               <img
                 src={product.image_url}
                 alt={product.name}
+                decoding="async"
                 onError={(e) => {
                   const target = e.currentTarget;
-                  if (!target.src.endsWith("/images/products/sac.webp")) {
-                    target.src = "/images/products/sac.webp";
+                  const currentSrc = target.src;
+                  if (currentSrc.includes(".webp")) {
+                    target.src = currentSrc.replace(/\.webp($|\?)/, ".jpg$1");
+                    return;
+                  }
+                  if (!currentSrc.includes("/images/products/sac.jpg") && !currentSrc.includes("/images/sac.jpg")) {
+                    target.src = "/images/products/sac.jpg";
                   }
                 }}
                 className="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-105 cursor-zoom-in"
@@ -365,10 +371,16 @@ function ProductDetailPage() {
             <img
               src={product.image_url}
               alt={product.name}
+              decoding="async"
               onError={(e) => {
                 const target = e.currentTarget;
-                if (!target.src.endsWith("/images/products/sac.webp")) {
-                  target.src = "/images/products/sac.webp";
+                const currentSrc = target.src;
+                if (currentSrc.includes(".webp")) {
+                  target.src = currentSrc.replace(/\.webp($|\?)/, ".jpg$1");
+                  return;
+                }
+                if (!currentSrc.includes("/images/products/sac.jpg") && !currentSrc.includes("/images/sac.jpg")) {
+                  target.src = "/images/products/sac.jpg";
                 }
               }}
               className="max-h-[82vh] w-auto rounded-xl object-contain mx-auto"

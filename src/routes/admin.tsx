@@ -555,8 +555,13 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
                         className="h-full w-full object-cover"
                         onError={(e) => {
                           const target = e.currentTarget;
-                          if (!target.src.endsWith("/images/products/sac.webp")) {
-                            target.src = "/images/products/sac.webp";
+                          const currentSrc = target.src;
+                          if (currentSrc.includes(".webp")) {
+                            target.src = currentSrc.replace(/\.webp($|\?)/, ".jpg$1");
+                            return;
+                          }
+                          if (!currentSrc.includes("/images/products/sac.jpg") && !currentSrc.includes("/images/sac.jpg")) {
+                            target.src = "/images/products/sac.jpg";
                           }
                         }}
                       />
@@ -963,8 +968,15 @@ function ProductForm({ draft, cats, onClose, onSaved }: { draft: Draft; cats: Ca
                   alt="Prévisualisation"
                   className="h-full w-full object-contain"
                   onError={(e) => {
-                    // Repli visuel si le chemin est incorrect
-                    (e.currentTarget as HTMLImageElement).src = "/images/products/sac.webp";
+                    const target = e.currentTarget as HTMLImageElement;
+                    const currentSrc = target.src;
+                    if (currentSrc.includes(".webp")) {
+                      target.src = currentSrc.replace(/\.webp($|\?)/, ".jpg$1");
+                      return;
+                    }
+                    if (!currentSrc.includes("/images/products/sac.jpg") && !currentSrc.includes("/images/sac.jpg")) {
+                      target.src = "/images/products/sac.jpg";
+                    }
                   }}
                 />
               </div>

@@ -20,10 +20,18 @@ export function ProductCard({ p }: { p: Product }) {
               src={p.image_url}
               alt={p.name}
               loading="lazy"
+              decoding="async"
               onError={(e) => {
                 const target = e.currentTarget;
-                if (!target.src.endsWith("/images/products/sac.webp")) {
-                  target.src = "/images/products/sac.webp";
+                const currentSrc = target.src;
+                // Si l'image .webp échoue, tenter la version .jpg
+                if (currentSrc.includes(".webp")) {
+                  target.src = currentSrc.replace(/\.webp($|\?)/, ".jpg$1");
+                  return;
+                }
+                // Si l'erreur persiste, fallback vers le sac artisanal en JPG garanti
+                if (!currentSrc.includes("/images/products/sac.jpg") && !currentSrc.includes("/images/sac.jpg")) {
+                  target.src = "/images/products/sac.jpg";
                 }
               }}
               className="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-108"

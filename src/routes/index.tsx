@@ -41,9 +41,10 @@ function Index() {
   // Pièces en vedette : créations marquées en vedette, ou créations phares
   const featuredOnly = products.filter((p) => p.featured);
   const displayFeatured = (featuredOnly.length > 0 ? featuredOnly : products).slice(0, 6);
+  const featuredIds = new Set(displayFeatured.map((p) => p.id));
 
-  // Nouveautés : créations les plus récentes pour que tout produit ajouté apparaisse immédiatement sur l'accueil
-  const recentProducts = products.slice(0, 6);
+  // Nouveautés complémentaires (sans doublons avec les pièces à l'honneur)
+  const otherRecentProducts = products.filter((p) => !featuredIds.has(p.id)).slice(0, 6);
 
   return (
     <>
@@ -60,6 +61,8 @@ function Index() {
               alt="Créations en crochet Pati"
               width={1600}
               height={1104}
+              loading="eager"
+              decoding="async"
               className="aspect-[4/3] sm:aspect-[16/10] w-full object-cover"
             />
           </div>
@@ -93,6 +96,8 @@ function Index() {
             alt="Créations en crochet Pati"
             width={1600}
             height={1104}
+            loading="eager"
+            decoding="async"
             className="aspect-[4/5] w-full rounded-[1.75rem] object-cover shadow-soft"
           />
         </div>
@@ -156,8 +161,8 @@ function Index() {
         </section>
       )}
 
-      {/* Dernières créations ajoutées */}
-      {recentProducts.length > 0 && recentProducts !== displayFeatured && (
+      {/* Dernières créations complémentaires */}
+      {otherRecentProducts.length > 0 && (
         <section className="mx-auto mt-20 sm:mt-24 max-w-6xl px-5">
           <div className="flex items-end justify-between gap-4">
             <div>
@@ -175,7 +180,7 @@ function Index() {
             </Link>
           </div>
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {recentProducts.map((p) => (
+            {otherRecentProducts.map((p) => (
               <ProductCard key={p.id} p={p} />
             ))}
           </div>
