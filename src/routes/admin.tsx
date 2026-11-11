@@ -43,6 +43,11 @@ import {
   Package,
   FolderTree,
   Sparkles,
+  Download,
+  Upload,
+  Copy,
+  Check,
+  Share2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
@@ -372,6 +377,7 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const [categoryToRename, setCategoryToRename] = useState<Category | null>(null);
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["products"] });
@@ -475,7 +481,16 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
             <Plus className="h-4 w-4 shrink-0" />
             <span>+ Ajouter un produit</span>
           </button>
-          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
+          <div className="grid grid-cols-3 sm:flex sm:items-center gap-2">
+            <button
+              type="button"
+              className="btn-outline justify-center gap-1.5 text-xs sm:text-sm py-2 px-3 text-center cursor-pointer"
+              onClick={() => setIsSyncModalOpen(true)}
+              title="Partager ou sauvegarder le catalogue"
+            >
+              <Share2 className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span>Synchroniser</span>
+            </button>
             <Link
               to="/boutique"
               className="btn-outline justify-center gap-1.5 text-xs sm:text-sm py-2 px-3 text-center"
@@ -701,6 +716,16 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
         confirmLabel="Enregistrer le nom"
         cancelLabel="Annuler"
       />
+
+      {/* Modal de synchronisation et export du catalogue */}
+      {isSyncModalOpen && (
+        <SyncCatalogModal
+          cats={cats}
+          products={products}
+          onClose={() => setIsSyncModalOpen(false)}
+          onImported={refresh}
+        />
+      )}
     </div>
   );
 }
@@ -1208,5 +1233,162 @@ function CategoryManager({
         </button>
       </form>
     </aside>
+  );
+}
+
+function SyncCatalogModal({
+  cats,
+  products,
+  onClose,
+  onImported,
+}: {
+  cats: Category[];
+  products: Product[];
+  onClose: () => void;
+  onImported: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [status, setStatus] = useState<string | null>(null);
+
+  const catalogPayload = {
+    categories: cats,
+    products: products,
+    deletedProductIds: [],
+    deletedCategoryIds: [],
+  };
+
+  const jsonString = JSON.stringify(catalogPayload, null, 2);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(jsonString);
+      setCopied(true);
+      setStatus("Catalogue copié dans le presse-papier ! Vous pouvez le coller directement dans le chat.");
+      setTimeout(() => setCopied(false), 3000);
+    } catch {
+      setStatus("Erreur lors de la copie automatique. Sélectionnez le texte ci-dessous.");
+    }
+  };
+
+  const handleDownload = () => {
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `catalog-crochet-pati-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setStatus("Fichier catalog.json téléchargé avec succès !");
+  };
+
+  const handleImport = () => {
+    try {
+      const parsed = JSON.parse(importText);
+      if (!parsed || !Array.isArray(parsed.products)) {
+        setStatus("Erreur : le format JSON doit contenir une liste 'products'.");
+        return;
+      }
+      localStorage.setItem("crochet_by_pati_custom_products", JSON.stringify(parsed.products));
+      if (Array.isArray(parsed.categories)) {
+        localStorage.setItem("crochet_by_pati_custom_categories", JSON.stringify(parsed.categories));
+      }
+      setStatus("Catalogue importé et synchronisé avec succès sur cet appareil !");
+      setTimeout(() => {
+        onImported();
+        onClose();
+      }, 1000);
+    } catch {
+      setStatus("Erreur : syntaxe JSON invalide. Vérifiez le texte collé.");
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-border/60 pb-3">
+          <div>
+            <h3 className="text-xl font-display font-semibold text-foreground">
+              Synchronisation du catalogue
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Partager vos créations entre votre PC, votre mobile et le serveur
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="rounded-2xl bg-secondary/40 p-4 border border-border/60 space-y-2">
+          <p className="text-xs font-semibold text-primary">
+            📦 Actuellement sur cet appareil : {products.length} création(s) et {cats.length} catégorie(s)
+          </p>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Pour que les créations ajoutées sur votre PC apparaissent sur tous les mobiles et pour tous les visiteurs, copiez les données ci-dessous pour les intégrer au code source ou téléchargez le fichier JSON.
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="btn-primary flex-1 justify-center gap-2 text-xs py-2.5 cursor-pointer"
+          >
+            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            <span>{copied ? "Copié !" : "Copier les données JSON"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleDownload}
+            className="btn-outline flex-1 justify-center gap-2 text-xs py-2.5 cursor-pointer"
+          >
+            <Download className="h-4 w-4 text-primary" />
+            <span>Télécharger catalog.json</span>
+          </button>
+        </div>
+
+        {status && (
+          <div className="rounded-xl bg-primary/10 border border-primary/20 p-3 text-xs text-primary font-medium animate-in fade-in">
+            {status}
+          </div>
+        )}
+
+        {/* Section Importer / Restaurer sur un autre terminal */}
+        <div className="pt-2 border-t border-border/60 space-y-2">
+          <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+            <Upload className="h-3.5 w-3.5 text-primary" />
+            <span>Importer sur cet appareil (depuis un autre PC ou mobile)</span>
+          </p>
+          <textarea
+            rows={3}
+            className="field text-xs font-mono"
+            placeholder="Collez ici le JSON d'un catalogue pour l'importer instantanément..."
+            value={importText}
+            onChange={(e) => setImportText(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={handleImport}
+            disabled={!importText.trim()}
+            className="btn-outline w-full justify-center text-xs py-2 cursor-pointer disabled:opacity-50"
+          >
+            Appliquer le catalogue sur cet appareil
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
