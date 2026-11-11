@@ -80,22 +80,7 @@ export const categoriesQuery = queryOptions({
   queryFn: async () => {
     let baseCategories = defaultCategories;
 
-    // 1. Tenter le chargement direct du catalogue statique public
-    try {
-      if (typeof window !== "undefined") {
-        const res = await fetch("/data/catalog.json", { cache: "no-cache" });
-        if (res.ok) {
-          const json = await res.json();
-          if (json?.categories && Array.isArray(json.categories) && json.categories.length > 0) {
-            baseCategories = json.categories;
-          }
-        }
-      }
-    } catch {
-      // Ignoré
-    }
-
-    // 2. Charger depuis le catalogue serveur (partagé entre tous les clients)
+    // 1. Charger depuis le catalogue serveur (partagé entre tous les clients)
     try {
       const serverCatalog = await getCatalogServerFn();
       if (serverCatalog?.categories && serverCatalog.categories.length > 0) {
@@ -105,7 +90,7 @@ export const categoriesQuery = queryOptions({
       // Fallback
     }
 
-    // 3. Synchroniser avec Supabase si actif
+    // 2. Synchroniser avec Supabase si actif
     try {
       const res = await withTimeout(
         supabase.from("categories").select("*").order("position")
@@ -130,22 +115,7 @@ export const productsQuery = queryOptions({
   queryFn: async () => {
     let baseProducts = defaultProducts;
 
-    // 1. Tenter le chargement direct du catalogue statique public (infaillible sur mobile & desktop)
-    try {
-      if (typeof window !== "undefined") {
-        const res = await fetch("/data/catalog.json", { cache: "no-cache" });
-        if (res.ok) {
-          const json = await res.json();
-          if (json?.products && Array.isArray(json.products) && json.products.length > 0) {
-            baseProducts = json.products;
-          }
-        }
-      }
-    } catch {
-      // Ignoré
-    }
-
-    // 2. Charger depuis le catalogue serveur persistant (partagé pour tous les clients)
+    // 1. Charger depuis le catalogue serveur persistant (partagé pour tous les clients)
     try {
       const serverCatalog = await getCatalogServerFn();
       if (serverCatalog?.products && serverCatalog.products.length > 0) {
@@ -155,7 +125,7 @@ export const productsQuery = queryOptions({
       // Fallback
     }
 
-    // 3. Synchroniser avec Supabase si actif
+    // 2. Synchroniser avec Supabase si actif
     try {
       const res = await withTimeout(
         supabase.from("products").select("*").order("created_at", { ascending: false })
@@ -189,21 +159,7 @@ export const productQuery = (id: string) =>
       const local = getLocalStoredProducts().find((p) => p.id === id);
       if (local) return local;
 
-      // 2. Vérifier dans le catalogue public statique
-      try {
-        if (typeof window !== "undefined") {
-          const res = await fetch("/data/catalog.json", { cache: "no-cache" });
-          if (res.ok) {
-            const json = await res.json();
-            const found = json?.products?.find((p: Product) => p.id === id);
-            if (found && !deletedIds.has(found.id)) return found;
-          }
-        }
-      } catch {
-        // Ignoré
-      }
-
-      // 3. Vérifier dans le catalogue serveur TanStack Start
+      // 2. Vérifier dans le catalogue serveur
       try {
         const serverCatalog = await getCatalogServerFn();
         const found = serverCatalog.products.find((p) => p.id === id);
@@ -212,7 +168,7 @@ export const productQuery = (id: string) =>
         // Fallback
       }
 
-      // 4. Vérifier avec Supabase si actif
+      // 3. Vérifier avec Supabase si actif
       try {
         const res = await withTimeout(
           supabase.from("products").select("*").eq("id", id).maybeSingle()

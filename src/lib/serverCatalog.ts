@@ -1,6 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
+import fs from "node:fs/promises";
+import path from "node:path";
 import type { Product, Category } from "./site";
-import catalogJson from "./catalogData.json";
+import { defaultProducts, defaultCategories } from "./defaultData";
+import catalogSeed from "@/data/catalog.json";
 
 export interface CatalogStore {
   categories: Category[];
@@ -9,13 +12,9 @@ export interface CatalogStore {
   deletedCategoryIds: string[];
 }
 
-// Initial store extrait du JSON embarqué sans dépendance système de fichiers
-const staticInitialStore: CatalogStore = {
-  categories: (catalogJson as any).categories || [],
-  products: (catalogJson as any).products || [],
-  deletedProductIds: (catalogJson as any).deletedProductIds || [],
-  deletedCategoryIds: (catalogJson as any).deletedCategoryIds || [],
-};
+// Fichiers de persistance
+const SEED_CATALOG = catalogSeed as unknown as CatalogStore;
+const TMP_CATALOG_FILE = path.resolve("/tmp", "crochet_pati_catalog.json");
 
 // Cache mémoire serveur global partagé pendant l'exécution
 declare global {
@@ -29,44 +28,45 @@ async function readCatalogFromStorage(): Promise<CatalogStore> {
     return globalThis.__PATI_SERVER_CATALOG__;
   }
 
-  // 2. En environnement Node.js local (ex: dev local sur PC) : tenter de lire le fichier à jour
+  // 2. Tenter de lire l'état persistant de l'instance (serverless : /tmp)
   try {
-    if (typeof process !== "undefined" && process.versions?.node && !process.env["VERCEL"] && !process.env["NOW_REGION"]) {
-      const fs = await import("node:fs/promises");
-      const path = await import("node:path");
-      const localFile = path.resolve(process.cwd(), "public", "data", "catalog.json");
-      const raw = await fs.readFile(localFile, "utf-8");
-      const parsed = JSON.parse(raw) as CatalogStore;
-      if (parsed && Array.isArray(parsed.products) && Array.isArray(parsed.categories)) {
-        globalThis.__PATI_SERVER_CATALOG__ = parsed;
-        return parsed;
-      }
+    const rawTmp = await fs.readFile(TMP_CATALOG_FILE, "utf-8");
+    const parsedTmp = JSON.parse(rawTmp) as CatalogStore;
+    if (parsedTmp && Array.isArray(parsedTmp.products)) {
+      globalThis.__PATI_SERVER_CATALOG__ = parsedTmp;
+      return parsedTmp;
     }
   } catch {
-    // Fallback silencieux
+    // Aucun fichier trouvé
   }
 
-  // 3. Fallback garanti sur le store JSON embarqué
-  globalThis.__PATI_SERVER_CATALOG__ = staticInitialStore;
-  return staticInitialStore;
+  // 3. Graine embarquée dans le bundle : identique en local et en production
+  const seed = structuredClone(SEED_CATALOG);
+  if (seed && Array.isArray(seed.products) && Array.isArray(seed.categories)) {
+    globalThis.__PATI_SERVER_CATALOG__ = seed;
+    return seed;
+  }
+
+  // 4. Initialisation par défaut
+  const initialStore: CatalogStore = {
+    categories: defaultCategories,
+    products: defaultProducts,
+    deletedProductIds: [],
+    deletedCategoryIds: [],
+  };
+  globalThis.__PATI_SERVER_CATALOG__ = initialStore;
+  return initialStore;
 }
 
 async function persistCatalogToStorage(store: CatalogStore): Promise<void> {
   globalThis.__PATI_SERVER_CATALOG__ = store;
+  const serialized = JSON.stringify(store, null, 2);
 
-  // Tentative d'écriture locale sécurisée si Node.js est disponible
+  // Écriture de l'état de l'instance (serverless : /tmp, éphémère par instance)
   try {
-    if (typeof process !== "undefined" && process.versions?.node && !process.env["VERCEL"] && !process.env["NOW_REGION"]) {
-      const fs = await import("node:fs/promises");
-      const path = await import("node:path");
-      const serialized = JSON.stringify(store, null, 2);
-      const localFile = path.resolve(process.cwd(), "public", "data", "catalog.json");
-      const srcFile = path.resolve(process.cwd(), "src", "lib", "catalogData.json");
-      await fs.writeFile(localFile, serialized, "utf-8").catch(() => {});
-      await fs.writeFile(srcFile, serialized, "utf-8").catch(() => {});
-    }
+    await fs.writeFile(TMP_CATALOG_FILE, serialized, "utf-8");
   } catch {
-    // Ignoré sur Vercel serverless / read-only
+    // Ignore
   }
 }
 
@@ -89,9 +89,11 @@ export const saveProductServerFn = createServerFn({ method: "POST" })
     const store = await readCatalogFromStorage();
     const product = data.product;
 
+    // Retirer des identifiants supprimés
     const deletedIds = new Set(store.deletedProductIds || []);
     deletedIds.delete(product.id);
 
+    // Mettre à jour ou ajouter
     const list = [...store.products];
     const index = list.findIndex((p) => p.id === product.id);
     if (index >= 0) {

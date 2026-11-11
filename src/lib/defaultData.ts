@@ -93,7 +93,7 @@ export const defaultProducts: Product[] = [
     description: "Ensemble haut et bas estival léger et respirant, fait main pour les journées ensoleillées et événements.",
     price: 30000,
     image_url: "/images/products/cardigan.webp",
-    featured: true,
+    featured: false,
     available: true,
   },
   {
@@ -103,7 +103,7 @@ export const defaultProducts: Product[] = [
     description: "Chapeau cloche protecteur et chic, confectionné avec du fil résistant et agréable au toucher.",
     price: 12000,
     image_url: "/images/products/bonnet.webp",
-    featured: true,
+    featured: false,
     available: true,
   },
   {
@@ -113,7 +113,7 @@ export const defaultProducts: Product[] = [
     description: "Chaussons douillets et hypoallergéniques pour nouveau-nés et bébés, tricotés avec une laine extra-douce.",
     price: 6000,
     image_url: "/images/products/bonnet.webp",
-    featured: true,
+    featured: false,
     available: true,
   },
   {
@@ -123,7 +123,7 @@ export const defaultProducts: Product[] = [
     description: "Panier artisanal en fil de coton tressé, idéal pour organiser avec style le salon, la chambre ou la salle de bain.",
     price: 10000,
     image_url: "/images/products/sac.webp",
-    featured: true,
+    featured: false,
     available: true,
   },
 ];
