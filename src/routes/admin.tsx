@@ -11,6 +11,8 @@ import {
   deleteProductServerFn,
   saveCategoryServerFn,
   deleteCategoryServerFn,
+  toggleProductAvailabilityServerFn,
+  toggleProductFeaturedServerFn,
 } from "@/lib/serverCatalog";
 import {
   saveLocalStoredProduct,
@@ -48,6 +50,11 @@ import {
   Copy,
   Check,
   Share2,
+  Search,
+  Star,
+  ZoomIn,
+  Pencil,
+  X,
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
@@ -378,11 +385,39 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const [categoryToRename, setCategoryToRename] = useState<Category | null>(null);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["products"] });
     qc.invalidateQueries({ queryKey: ["categories"] });
     qc.invalidateQueries({ queryKey: ["product"] });
+  };
+
+  const handleToggleAvailability = (p: Product) => {
+    const nextVal = !p.available;
+    const updated = { ...p, available: nextVal };
+    saveLocalStoredProduct(updated);
+
+    qc.setQueryData<Product[]>(["products"], (old = []) =>
+      old.map((item) => (item.id === p.id ? updated : item))
+    );
+
+    toggleProductAvailabilityServerFn({ data: { id: p.id, available: nextVal } }).catch(() => {});
+    refresh();
+  };
+
+  const handleToggleFeatured = (p: Product) => {
+    const nextVal = !p.featured;
+    const updated = { ...p, featured: nextVal };
+    saveLocalStoredProduct(updated);
+
+    qc.setQueryData<Product[]>(["products"], (old = []) =>
+      old.map((item) => (item.id === p.id ? updated : item))
+    );
+
+    toggleProductFeaturedServerFn({ data: { id: p.id, featured: nextVal } }).catch(() => {});
+    refresh();
   };
 
   const handleLogout = () => {
@@ -453,7 +488,17 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
     refresh();
   };
 
-  const list = filter ? products.filter((p) => p.category_id === filter) : products;
+  const filteredProducts = products.filter((p) => {
+    const matchesCat = !filter || p.category_id === filter;
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return matchesCat;
+    const catName = cats.find((c) => c.id === p.category_id)?.name?.toLowerCase() ?? "";
+    const matchesSearch =
+      p.name.toLowerCase().includes(q) ||
+      (p.description && p.description.toLowerCase().includes(q)) ||
+      catName.includes(q);
+    return matchesCat && matchesSearch;
+  });
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-5 py-6 sm:py-12">
@@ -540,34 +585,66 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
 
       <div className="mt-8 sm:mt-10 grid gap-8 lg:grid-cols-[1fr_300px]">
         <div>
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <select
-              className="field w-full sm:max-w-xs text-xs sm:text-sm font-medium"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-            >
-              <option value="">Toutes les catégories ({products.length})</option>
-              {cats.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({products.filter((p) => p.category_id === c.id).length})
-                </option>
-              ))}
-            </select>
+          {/* Barre de recherche et filtre de catégorie style Irina */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Rechercher par nom, description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="field pl-10 pr-9 text-xs sm:text-sm w-full bg-card"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer"
+                  title="Effacer la recherche"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <select
+                className="field w-full sm:w-auto text-xs sm:text-sm font-medium bg-card"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+              >
+                <option value="">Toutes les catégories ({products.length})</option>
+                {cats.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({products.filter((p) => p.category_id === c.id).length})
+                  </option>
+                ))}
+              </select>
+              <span className="shrink-0 text-xs text-muted-foreground font-medium px-2 py-1 rounded-lg bg-secondary/50 border border-border/60">
+                {filteredProducts.length} création{filteredProducts.length > 1 ? "s" : ""}
+              </span>
+            </div>
           </div>
 
           <div className="divide-y divide-border rounded-2xl border border-border bg-card overflow-hidden shadow-xs">
-            {list.map((p) => (
+            {filteredProducts.map((p) => (
               <div
                 key={p.id}
                 className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 hover:bg-secondary/15 transition"
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="h-16 w-14 sm:h-18 sm:w-16 shrink-0 overflow-hidden rounded-xl bg-muted border border-border/60">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewProduct(p)}
+                    className="group relative h-16 w-14 sm:h-18 sm:w-16 shrink-0 overflow-hidden rounded-xl bg-muted border border-border/60 cursor-pointer hover:ring-2 hover:ring-primary/40 transition-all text-left"
+                    title="Cliquer pour agrandir la photo"
+                  >
                     {p.image_url ? (
                       <img
                         src={p.image_url}
                         alt=""
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
                         onError={(e) => {
                           const target = e.currentTarget;
                           const currentSrc = target.src;
@@ -585,7 +662,10 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
                         Pati
                       </div>
                     )}
-                  </div>
+                    <div className="absolute inset-0 bg-cocoa/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                      <ZoomIn className="h-4 w-4 text-white drop-shadow-sm" />
+                    </div>
+                  </button>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="font-display text-base sm:text-lg font-semibold text-foreground truncate max-w-[220px] sm:max-w-none">
@@ -596,9 +676,13 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
                           ★ Vedette
                         </span>
                       )}
-                      {!p.available && (
-                        <span className="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      {!p.available ? (
+                        <span className="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground border border-border/40">
                           Sur commande
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                          Disponible
                         </span>
                       )}
                     </div>
@@ -609,11 +693,12 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
                   </div>
                 </div>
 
-                {/* Boutons d'action : pleine largeur sur mobile, stylisés et protégés contre tout débordement */}
-                <div className="flex items-center gap-2 pt-2.5 sm:pt-0 border-t border-border/40 sm:border-0 shrink-0 w-full sm:w-auto">
+                {/* Boutons d'action rapides style Irina */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-2.5 sm:pt-0 border-t border-border/40 sm:border-0 shrink-0 w-full sm:w-auto">
+                  {/* Modifier */}
                   <button
                     type="button"
-                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-card hover:bg-secondary px-3.5 py-2 text-xs font-semibold text-foreground hover:text-primary transition cursor-pointer shadow-xs active:scale-[0.98]"
+                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-card hover:bg-secondary px-3 py-1.5 text-xs font-semibold text-foreground hover:text-primary transition cursor-pointer shadow-xs active:scale-[0.98]"
                     onClick={() =>
                       setDraft({
                         id: p.id,
@@ -626,14 +711,72 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
                         available: p.available,
                       })
                     }
+                    title="Modifier cette création"
                   >
-                    <Edit3 className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <Pencil className="h-3.5 w-3.5 text-primary shrink-0" />
                     <span>Modifier</span>
                   </button>
+
+                  {/* Afficher (Agrandir la photo sans quitter la page) */}
                   <button
                     type="button"
-                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-lg border border-destructive/25 bg-destructive/5 hover:bg-destructive/15 px-3.5 py-2 text-xs font-semibold text-destructive transition cursor-pointer shadow-xs active:scale-[0.98]"
+                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-card hover:bg-secondary px-3 py-1.5 text-xs font-semibold text-foreground hover:text-primary transition cursor-pointer shadow-xs active:scale-[0.98]"
+                    onClick={() => setPreviewProduct(p)}
+                    title="Agrandir et voir la photo"
+                  >
+                    <ZoomIn className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span>Afficher</span>
+                  </button>
+
+                  {/* Basculer disponibilité (immédiat) */}
+                  <button
+                    type="button"
+                    onClick={() => handleToggleAvailability(p)}
+                    className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition cursor-pointer shadow-xs active:scale-[0.98] ${
+                      p.available
+                        ? "border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                        : "border-border bg-card hover:bg-secondary text-muted-foreground"
+                    }`}
+                    title={p.available ? "Marquer sur commande" : "Rendre disponible immédiatement"}
+                  >
+                    {p.available ? (
+                      <>
+                        <Eye className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <span>Disponible</span>
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span>Sur devis</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Basculer Vedette / Coup de cœur (immédiat) */}
+                  <button
+                    type="button"
+                    onClick={() => handleToggleFeatured(p)}
+                    className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition cursor-pointer shadow-xs active:scale-[0.98] ${
+                      p.featured
+                        ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                        : "border-border bg-card hover:bg-secondary text-muted-foreground"
+                    }`}
+                    title={p.featured ? "Retirer des pièces à l'honneur" : "Mettre à l'honneur en vedette"}
+                  >
+                    <Star
+                      className={`h-3.5 w-3.5 shrink-0 ${
+                        p.featured ? "fill-amber-500 text-amber-500" : "text-muted-foreground"
+                      }`}
+                    />
+                    <span>Vedette</span>
+                  </button>
+
+                  {/* Supprimer */}
+                  <button
+                    type="button"
+                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-lg border border-destructive/25 bg-destructive/5 hover:bg-destructive/15 px-3 py-1.5 text-xs font-semibold text-destructive transition cursor-pointer shadow-xs active:scale-[0.98]"
                     onClick={() => setProductToDelete(p)}
+                    title="Supprimer cette création"
                   >
                     <Trash2 className="h-3.5 w-3.5 shrink-0" />
                     <span>Supprimer</span>
@@ -641,10 +784,14 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
                 </div>
               </div>
             ))}
-            {list.length === 0 && (
+            {filteredProducts.length === 0 && (
               <div className="p-10 text-center text-sm text-muted-foreground">
                 <Package className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-                <p>Aucun produit dans cette sélection.</p>
+                <p>
+                  {products.length > 0
+                    ? "Aucun produit ne correspond à votre recherche."
+                    : "Aucun produit dans le catalogue."}
+                </p>
               </div>
             )}
           </div>
@@ -656,6 +803,121 @@ function Dashboard({ email, onLogout }: { email: string; onLogout?: () => void }
           onRename={(c) => setCategoryToRename(c)}
         />
       </div>
+
+      {/* Modal d'agrandissement d'image et fiche rapide (style Irina) */}
+      {previewProduct && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-cocoa/50 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in duration-200"
+          onClick={() => setPreviewProduct(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg overflow-hidden rounded-3xl bg-card border border-border shadow-soft p-5 sm:p-6 space-y-4"
+          >
+            <div className="flex items-start justify-between gap-3 pb-3 border-b border-border/60">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary border border-primary/20">
+                    {cats.find((c) => c.id === previewProduct.category_id)?.name ?? "Sans catégorie"}
+                  </span>
+                  {previewProduct.featured && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                      <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                      Vedette
+                    </span>
+                  )}
+                  {previewProduct.available ? (
+                    <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                      Disponible
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground border border-border/40">
+                      Sur commande
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-xl sm:text-2xl font-display font-semibold text-foreground truncate">
+                  {previewProduct.name}
+                </h3>
+                <p className="text-base font-semibold text-primary mt-0.5">
+                  {formatPrice(previewProduct.price)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewProduct(null)}
+                className="h-8 w-8 rounded-full border border-border/80 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer shrink-0"
+                aria-label="Fermer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="relative flex items-center justify-center rounded-2xl bg-secondary/30 p-4 border border-border/40 max-h-[50vh] min-h-[220px] overflow-hidden">
+              {previewProduct.image_url ? (
+                <img
+                  src={previewProduct.image_url}
+                  alt={previewProduct.name}
+                  className="max-h-[46vh] max-w-full object-contain rounded-xl drop-shadow-md transition-transform duration-200 hover:scale-105"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    const currentSrc = target.src;
+                    if (currentSrc.includes(".webp")) {
+                      target.src = currentSrc.replace(/\.webp($|\?)/, ".jpg$1");
+                      return;
+                    }
+                    if (!currentSrc.includes("/images/products/sac.jpg") && !currentSrc.includes("/images/sac.jpg")) {
+                      target.src = "/images/products/sac.jpg";
+                    }
+                  }}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-muted-foreground">
+                  <Package className="h-10 w-10 text-muted-foreground/40 mb-2" />
+                  <p className="text-sm">Aucune photo enregistrée</p>
+                </div>
+              )}
+            </div>
+
+            {previewProduct.description && (
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed bg-secondary/20 p-3 rounded-xl border border-border/40">
+                {previewProduct.description}
+              </p>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/60">
+              <button
+                type="button"
+                onClick={() => {
+                  const p = previewProduct;
+                  setPreviewProduct(null);
+                  setDraft({
+                    id: p.id,
+                    name: p.name,
+                    description: p.description ?? "",
+                    price: p.price?.toString() ?? "",
+                    category_id: p.category_id ?? "",
+                    image_url: p.image_url ?? "",
+                    featured: p.featured,
+                    available: p.available,
+                  });
+                }}
+                className="btn-primary gap-1.5 text-xs py-2 px-3.5 cursor-pointer"
+              >
+                <Pencil className="h-3.5 w-3.5 shrink-0" />
+                <span>Modifier cette création</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewProduct(null)}
+                className="btn-outline text-xs py-2 px-3.5 cursor-pointer"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {draft && (
         <ProductForm

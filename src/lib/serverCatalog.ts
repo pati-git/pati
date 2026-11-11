@@ -112,6 +112,62 @@ export const saveProductServerFn = createServerFn({ method: "POST" })
     return updatedStore;
   });
 
+export const toggleProductAvailabilityServerFn = createServerFn({ method: "POST" })
+  .validator((input: unknown) => {
+    if (!input || typeof input !== "object" || !("id" in input)) {
+      throw new Error("Identifiant manquant.");
+    }
+    return input as { id: string; available?: boolean };
+  })
+  .handler(async ({ data }) => {
+    const store = await readCatalogFromStorage();
+    const list = store.products.map((p) => {
+      if (p.id === data.id) {
+        return {
+          ...p,
+          available: typeof data.available === "boolean" ? data.available : !p.available,
+        };
+      }
+      return p;
+    });
+
+    const updatedStore: CatalogStore = {
+      ...store,
+      products: list,
+    };
+
+    await persistCatalogToStorage(updatedStore);
+    return updatedStore;
+  });
+
+export const toggleProductFeaturedServerFn = createServerFn({ method: "POST" })
+  .validator((input: unknown) => {
+    if (!input || typeof input !== "object" || !("id" in input)) {
+      throw new Error("Identifiant manquant.");
+    }
+    return input as { id: string; featured?: boolean };
+  })
+  .handler(async ({ data }) => {
+    const store = await readCatalogFromStorage();
+    const list = store.products.map((p) => {
+      if (p.id === data.id) {
+        return {
+          ...p,
+          featured: typeof data.featured === "boolean" ? data.featured : !p.featured,
+        };
+      }
+      return p;
+    });
+
+    const updatedStore: CatalogStore = {
+      ...store,
+      products: list,
+    };
+
+    await persistCatalogToStorage(updatedStore);
+    return updatedStore;
+  });
+
 export const deleteProductServerFn = createServerFn({ method: "POST" })
   .validator((input: unknown) => {
     if (!input || typeof input !== "object" || !("id" in input)) {
@@ -195,3 +251,4 @@ export const deleteCategoryServerFn = createServerFn({ method: "POST" })
     await persistCatalogToStorage(updatedStore);
     return updatedStore;
   });
+
