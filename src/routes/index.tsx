@@ -38,13 +38,13 @@ function Index() {
     refetchCats();
   }, [refetchProducts, refetchCats]);
 
-  // Pièces en vedette : créations marquées en vedette, ou créations phares
+  // Pièces en vedette : créations marquées en vedette
   const featuredOnly = products.filter((p) => p.featured);
-  const displayFeatured = (featuredOnly.length > 0 ? featuredOnly : products).slice(0, 6);
+  const displayFeatured = featuredOnly.length > 0 ? featuredOnly : products;
   const featuredIds = new Set(displayFeatured.map((p) => p.id));
 
-  // Nouveautés complémentaires (sans doublons avec les pièces à l'honneur)
-  const otherRecentProducts = products.filter((p) => !featuredIds.has(p.id)).slice(0, 6);
+  // Nouveautés complémentaires (toutes les autres créations sans doublons)
+  const otherRecentProducts = products.filter((p) => !featuredIds.has(p.id));
 
   return (
     <>
@@ -59,11 +59,11 @@ function Index() {
             <img
               src={hero}
               alt="Créations en crochet Pati"
-              width={1600}
-              height={1104}
+              width={1024}
+              height={1024}
               loading="eager"
               decoding="async"
-              className="aspect-[4/3] sm:aspect-[16/10] w-full object-cover"
+              className="aspect-square w-full object-cover object-center"
             />
           </div>
 
@@ -94,11 +94,11 @@ function Index() {
           <img
             src={hero}
             alt="Créations en crochet Pati"
-            width={1600}
-            height={1104}
+            width={1024}
+            height={1024}
             loading="eager"
             decoding="async"
-            className="aspect-[4/5] w-full rounded-[1.75rem] object-cover shadow-soft"
+            className="aspect-square w-full rounded-[1.75rem] object-cover shadow-soft"
           />
         </div>
       </section>
