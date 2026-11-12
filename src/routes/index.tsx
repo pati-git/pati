@@ -109,29 +109,70 @@ function Index() {
           <p className="eyebrow">Nos univers créatifs</p>
           <h2 className="mt-2 text-3xl sm:text-4xl md:text-5xl font-display">Explorer par catégorie</h2>
         </div>
-        <div className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+        <div className="mt-10 grid grid-cols-2 gap-3.5 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
           {cats.map((c, i) => {
             const count = products.filter((p) => p.category_id === c.id).length;
+            const categoryImage =
+              c.image_url ||
+              products.find((p) => p.category_id === c.id && p.image_url)?.image_url ||
+              ["/images/products/cardigan.webp", "/images/products/bonnet.webp", "/images/products/sac.webp", "/images/products/custom.webp"][i % 4];
+
             return (
               <Link
                 key={c.id}
                 to="/boutique"
                 search={{ c: c.slug }}
-                className={`group rounded-2xl border border-border p-5 sm:p-6 transition duration-300 hover:-translate-y-1 hover:shadow-soft ${
-                  ["bg-secondary/60", "bg-muted", "bg-accent/40", "bg-sage/20"][i % 4]
-                }`}
+                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl sm:rounded-3xl border border-border bg-card shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-soft"
               >
-                <div className="flex items-center justify-between">
-                  <p className="font-display text-sm text-primary font-medium">0{i + 1}</p>
-                  <span className="text-[11px] font-medium text-muted-foreground bg-card/60 px-2 py-0.5 rounded-full">
-                    {count} création{count > 1 ? "s" : ""}
-                  </span>
+                {/* Photo représentative de la catégorie */}
+                <div className="relative aspect-4/3 sm:aspect-square w-full overflow-hidden bg-muted">
+                  <img
+                    src={categoryImage}
+                    alt={c.name}
+                    className="h-full w-full object-cover transition duration-500 group-hover:scale-108"
+                    loading="lazy"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (!target.src.includes("/images/products/sac.jpg")) {
+                        target.src = "/images/products/sac.jpg";
+                      }
+                    }}
+                  />
+                  {/* Dégradé de contraste */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+
+                  {/* Badge nombre de pièces */}
+                  <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3">
+                    <span className="rounded-full bg-card/90 backdrop-blur-xs px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-semibold text-foreground shadow-xs border border-border/60">
+                      {count} pièce{count > 1 ? "s" : ""}
+                    </span>
+                  </div>
+
+                  {/* Numéro discret */}
+                  <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3">
+                    <span className="rounded-full bg-black/40 backdrop-blur-xs px-2 py-0.5 text-[10px] font-mono text-white/90">
+                      0{i + 1}
+                    </span>
+                  </div>
+
+                  {/* Titre sur l'image */}
+                  <div className="absolute bottom-2.5 left-2.5 right-2.5 sm:bottom-3 sm:left-3 sm:right-3 text-white">
+                    <h3 className="font-display text-base sm:text-lg md:text-xl font-semibold leading-snug drop-shadow-sm">
+                      {c.name}
+                    </h3>
+                  </div>
                 </div>
-                <h3 className="mt-5 text-xl sm:text-2xl font-display">{c.name}</h3>
-                <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2">{c.description}</p>
-                <p className="mt-4 text-xs font-semibold tracking-widest uppercase text-foreground/80 group-hover:text-primary transition">
-                  Voir →
-                </p>
+
+                {/* Description et lien d'accès */}
+                <div className="p-3 sm:p-4 bg-card flex flex-col justify-between flex-1 gap-1.5 sm:gap-2">
+                  <p className="text-[11px] sm:text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                    {c.description || "Découvrez notre collection artisanale crochetée à la main."}
+                  </p>
+                  <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-primary group-hover:translate-x-1 transition duration-200 flex items-center gap-1 mt-auto">
+                    <span>Explorer</span>
+                    <span>→</span>
+                  </p>
+                </div>
               </Link>
             );
           })}

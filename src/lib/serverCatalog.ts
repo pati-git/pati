@@ -49,6 +49,7 @@ async function readCatalogFromStorage(): Promise<CatalogStore> {
               slug: c.slug ? String(c.slug) : String(c.id),
               description: c.description ? String(c.description) : null,
               position: c.position != null ? Number(c.position) : 1,
+              image_url: c.image_url ? String(c.image_url) : null,
             }))
           : defaultCategories;
 
@@ -312,13 +313,14 @@ export const saveCategoryServerFn = createServerFn({ method: "POST" })
     // Persistance dans TiDB Cloud
     try {
       await query(
-        `INSERT INTO pati_categories (id, name, slug, description, position, updated_at)
-         VALUES (?, ?, ?, ?, ?, NOW())
+        `INSERT INTO pati_categories (id, name, slug, description, position, image_url, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, NOW())
          ON DUPLICATE KEY UPDATE
            name = VALUES(name),
            slug = VALUES(slug),
            description = VALUES(description),
            position = VALUES(position),
+           image_url = VALUES(image_url),
            updated_at = NOW()`,
         [
           category.id,
@@ -326,6 +328,7 @@ export const saveCategoryServerFn = createServerFn({ method: "POST" })
           category.slug || null,
           category.description || null,
           category.position || 1,
+          category.image_url || null,
         ]
       );
     } catch (dbErr) {

@@ -95,16 +95,30 @@ function Boutique() {
       {/* Liste des sections de catégories */}
       {shown.map((cat) => {
         const items = products.filter((p) => p.category_id === cat.id);
+        const catImage = cat.image_url || items.find((p) => p.image_url)?.image_url;
+
         return (
           <section key={cat.id} className="mt-14 sm:mt-16">
-            <div className="flex items-baseline justify-between border-b border-border pb-3">
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-display">{cat.name}</h2>
-                {cat.description && (
-                  <p className="text-xs text-muted-foreground mt-0.5">{cat.description}</p>
+            <div className="flex items-center justify-between border-b border-border pb-3.5 gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                {catImage && (
+                  <div className="h-11 w-11 sm:h-13 sm:w-13 shrink-0 rounded-xl overflow-hidden border border-border/80 shadow-xs bg-muted">
+                    <img
+                      src={catImage}
+                      alt={cat.name}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
                 )}
+                <div className="min-w-0">
+                  <h2 className="text-2xl sm:text-3xl font-display truncate">{cat.name}</h2>
+                  {cat.description && (
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{cat.description}</p>
+                  )}
+                </div>
               </div>
-              <span className="text-xs font-medium text-muted-foreground">
+              <span className="text-xs font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20 shrink-0">
                 {items.length} pièce{items.length > 1 ? "s" : ""}
               </span>
             </div>

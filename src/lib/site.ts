@@ -13,6 +13,7 @@ export type Category = {
   slug: string;
   description: string | null;
   position: number;
+  image_url?: string | null;
 };
 
 export type Product = {
