@@ -19,15 +19,7 @@ export const saveProductImageServerFn = createServerFn({ method: "POST" })
     return { fileName, base64Data };
   })
   .handler(async ({ data }) => {
-    // Sur Vercel ou tout environnement serverless (où le système de fichiers est en lecture seule),
-    // l'image WebP ultra-optimisée est conservée directement en format autonome, garantissant
-    // un chargement instantané sans aucune dépendance de stockage externe ni risque d'erreur 404/400.
-    if (process.env["VERCEL"] || process.env["NOW_REGION"]) {
-      return {
-        imageUrl: data.base64Data,
-      };
-    }
-
+    // Écriture de sauvegarde en local si le système de fichiers est disponible
     try {
       const cleanBase64 = data.base64Data.replace(/^data:image\/[a-z0-9.+]+;base64,/, "");
       const buffer = Buffer.from(cleanBase64, "base64");
@@ -43,15 +35,14 @@ export const saveProductImageServerFn = createServerFn({ method: "POST" })
       const destinationPath = path.join(targetDir, uniqueFileName);
 
       await fs.writeFile(destinationPath, buffer);
-
-      // En environnement avec disque persistant (local / serveur dédié) : chemin public relatif
-      return {
-        imageUrl: `/images/products/${uniqueFileName}`,
-      };
-    } catch (writeErr) {
-      console.warn("Écriture disque impossible (système de fichiers en lecture seule), utilisation directe du WebP :", writeErr);
-      return {
-        imageUrl: data.base64Data,
-      };
+    } catch {
+      // Ignoré en serverless / lecture seule
     }
+
+    // On retourne toujours le format autonome dataUrl (WebP ultra-optimisé) :
+    // Cela garantit qu'aucun terminal (smartphone, tablette, PC) n'ait d'erreur 404
+    // et que l'image voyage directement dans la table MySQL pati_produits.
+    return {
+      imageUrl: data.base64Data,
+    };
   });
